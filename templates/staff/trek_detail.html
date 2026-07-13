@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Update Trek - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('staff.dashboard') }}" class="text-success text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Update {{ trek.name }}</li>
+            </ol>
+        </nav>
+
+        <div class="card form-card p-4">
+            <div class="card-body">
+                <h2 class="card-title fw-bold mb-4">
+                    <i class="fa-solid fa-route text-success me-2"></i>Update Trek Parameters
+                </h2>
+
+                <div class="alert alert-light border-0 rounded-3 mb-4 small">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>Trek Name:</strong> {{ trek.name }}
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Location:</strong> {{ trek.location }}
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Difficulty:</strong> {{ trek.difficulty }}
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>Total Slots limit:</strong> {{ trek.total_slots }}
+                        </div>
+                    </div>
+                </div>
+
+                <form action="{{ url_for('staff.update_trek', id=trek.id) }}" method="POST">
+                    
+                    <div class="mb-3">
+                        <label for="available_slots" class="form-label fw-bold">Available Slots <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="available_slots" name="available_slots" required min="0" max="{{ trek.total_slots }}" value="{{ trek.available_slots }}">
+                        <div class="form-text">Must be a value between 0 and the trek total slots limit ({{ trek.total_slots }}).</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="status" class="form-label fw-bold">Trek Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="Pending" {% if trek.status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Approved" {% if trek.status == 'Approved' %}selected{% endif %}>Approved</option>
+                            <option value="Open" {% if trek.status == 'Open' %}selected{% endif %}>Open</option>
+                            <option value="Closed" {% if trek.status == 'Closed' %}selected{% endif %}>Closed</option>
+                            <option value="Completed" {% if trek.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                        <div class="form-text">Changing to 'Open' allows trekkers to book. 'Closed' prevents new bookings.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save me-1"></i>Save Changes</button>
+                        <a href="{{ url_for('staff.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

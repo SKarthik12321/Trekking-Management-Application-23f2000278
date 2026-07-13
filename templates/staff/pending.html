@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Approval - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-7 text-center">
+        <div class="card shadow-sm border-0 rounded-4 p-5 bg-white">
+            <div class="card-body">
+                <i class="fa-solid fa-hourglass-half fa-4x text-warning mb-4 animate-pulse"></i>
+                <h2 class="fw-bold mb-3">Awaiting Admin Approval</h2>
+                <p class="lead text-muted mb-4">
+                    Your staff account registration is currently in a <strong>pending</strong> state.
+                    An administrator needs to review and approve your credentials before you can access the guide dashboard.
+                </p>
+                <div class="alert alert-info border-0 rounded-3 text-start small mb-4">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <strong>What happens next?</strong> Once approved, you will be able to view treks assigned to you by the admin, edit slots, adjust status, and view the trekkers list.
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger">
+                    <i class="fa-solid fa-right-from-bracket me-1"></i>Logout and Check Later
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
