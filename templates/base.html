@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Trekking Management Application{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         OFF-CANVAS SIDEBAR  (visible only on small screens < lg)
+         Opens from the LEFT when the ☰ button is tapped.
+    ════════════════════════════════════════════════════════════════════ -->
+    <div class="offcanvas offcanvas-start sidebar-offcanvas" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel">
+        <!-- Sidebar Header -->
+        <div class="offcanvas-header sidebar-header">
+            <a class="sidebar-brand" href="/">
+                <i class="fa-solid fa-mountain-sun me-2"></i>TrekFlow
+            </a>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <!-- Sidebar Body -->
+        <div class="offcanvas-body sidebar-body d-flex flex-column p-0">
+
+            {% if current_user.is_authenticated %}
+                <!-- User info pill at top of sidebar -->
+                <div class="sidebar-user-info px-3 py-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="sidebar-avatar">
+                            {{ current_user.name[0]|upper }}
+                        </div>
+                        <div>
+                            <div class="sidebar-username">{{ current_user.name }}</div>
+                            <div class="sidebar-role">{{ current_user.role|capitalize }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="sidebar-divider">
+
+                <!-- Nav links -->
+                <nav class="sidebar-nav flex-grow-1 px-2">
+                    {% if current_user.role == 'admin' %}
+                        <a class="sidebar-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"
+                           href="{{ url_for('admin.dashboard') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-gauge sidebar-icon"></i>Dashboard
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'admin.manage_staff' %}active{% endif %}"
+                           href="{{ url_for('admin.manage_staff') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-user-tie sidebar-icon"></i>Manage Staff
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'admin.manage_users' %}active{% endif %}"
+                           href="{{ url_for('admin.manage_users') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-users sidebar-icon"></i>Manage Users
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'admin.manage_bookings' %}active{% endif %}"
+                           href="{{ url_for('admin.manage_bookings') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-receipt sidebar-icon"></i>All Bookings
+                        </a>
+                        <hr class="sidebar-divider">
+                        <div class="sidebar-section-label px-3">Search</div>
+                        <form class="px-3 pb-2" action="{{ url_for('admin.search') }}" method="GET">
+                            <select name="type" class="form-select form-select-sm mb-2 sidebar-select">
+                                <option value="trek">Treks</option>
+                                <option value="staff">Staff</option>
+                                <option value="user">Users</option>
+                            </select>
+                            <div class="input-group input-group-sm">
+                                <input class="form-control sidebar-search-input" type="search" name="q" placeholder="Search..." required>
+                                <button class="btn btn-success btn-sm" type="submit">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </button>
+                            </div>
+                        </form>
+
+                    {% elif current_user.role == 'staff' %}
+                        {% if current_user.status == 'approved' %}
+                            <a class="sidebar-link {% if request.endpoint == 'staff.dashboard' %}active{% endif %}"
+                               href="{{ url_for('staff.dashboard') }}" data-bs-dismiss="offcanvas">
+                                <i class="fa-solid fa-person-hiking sidebar-icon"></i>My Treks
+                            </a>
+                        {% else %}
+                            <a class="sidebar-link {% if request.endpoint == 'staff.pending_approval' %}active{% endif %}"
+                               href="{{ url_for('staff.pending_approval') }}" data-bs-dismiss="offcanvas">
+                                <i class="fa-solid fa-hourglass-half sidebar-icon"></i>Pending Approval
+                            </a>
+                        {% endif %}
+
+                    {% elif current_user.role == 'user' %}
+                        <a class="sidebar-link {% if request.endpoint == 'user.dashboard' %}active{% endif %}"
+                           href="{{ url_for('user.dashboard') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-house sidebar-icon"></i>Home
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'user.browse_treks' %}active{% endif %}"
+                           href="{{ url_for('user.browse_treks') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-compass sidebar-icon"></i>Browse Treks
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'user.bookings_history' %}active{% endif %}"
+                           href="{{ url_for('user.bookings_history') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-history sidebar-icon"></i>My Bookings
+                        </a>
+                        <a class="sidebar-link {% if request.endpoint == 'user.profile' %}active{% endif %}"
+                           href="{{ url_for('user.profile') }}" data-bs-dismiss="offcanvas">
+                            <i class="fa-solid fa-user-gear sidebar-icon"></i>My Profile
+                        </a>
+                    {% endif %}
+                </nav>
+
+                <!-- Logout at bottom of sidebar -->
+                <div class="sidebar-footer px-3 py-3">
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger w-100 btn-sm">
+                        <i class="fa-solid fa-right-from-bracket me-2"></i>Logout
+                    </a>
+                </div>
+
+            {% else %}
+                <nav class="sidebar-nav flex-grow-1 px-2 pt-3">
+                    <a class="sidebar-link" href="{{ url_for('auth.login') }}" data-bs-dismiss="offcanvas">
+                        <i class="fa-solid fa-right-to-bracket sidebar-icon"></i>Login
+                    </a>
+                    <a class="sidebar-link" href="{{ url_for('auth.register') }}" data-bs-dismiss="offcanvas">
+                        <i class="fa-solid fa-user-plus sidebar-icon"></i>Register
+                    </a>
+                </nav>
+            {% endif %}
+
+        </div>
+    </div>
+    <!-- END OFF-CANVAS SIDEBAR -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         DESKTOP / TABLET TOP NAVBAR  (hidden below lg breakpoint,
+         replaced by the off-canvas sidebar above)
+    ════════════════════════════════════════════════════════════════════ -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+
+            <!-- ☰ hamburger — only visible on small screens, triggers off-canvas -->
+            <button class="navbar-toggler d-lg-none border-0 me-2"
+                    type="button"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#mobileSidebar"
+                    aria-controls="mobileSidebar"
+                    aria-label="Open navigation menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <a class="navbar-brand text-success" href="/">
+                <i class="fa-solid fa-mountain-sun me-2"></i>TrekFlow
+            </a>
+
+            <!-- Desktop nav links — hidden on mobile, handled by sidebar -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'admin' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"
+                                   href="{{ url_for('admin.dashboard') }}">
+                                    <i class="fa-solid fa-gauge me-1"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'admin.manage_staff' %}active{% endif %}"
+                                   href="{{ url_for('admin.manage_staff') }}">
+                                    <i class="fa-solid fa-user-tie me-1"></i>Manage Staff
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'admin.manage_users' %}active{% endif %}"
+                                   href="{{ url_for('admin.manage_users') }}">
+                                    <i class="fa-solid fa-users me-1"></i>Manage Users
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'admin.manage_bookings' %}active{% endif %}"
+                                   href="{{ url_for('admin.manage_bookings') }}">
+                                    <i class="fa-solid fa-receipt me-1"></i>All Bookings
+                                </a>
+                            </li>
+                        {% elif current_user.role == 'staff' %}
+                            {% if current_user.status == 'approved' %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'staff.dashboard' %}active{% endif %}"
+                                       href="{{ url_for('staff.dashboard') }}">
+                                        <i class="fa-solid fa-person-hiking me-1"></i>My Treks
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="nav-item">
+                                    <a class="nav-link {% if request.endpoint == 'staff.pending_approval' %}active{% endif %}"
+                                       href="{{ url_for('staff.pending_approval') }}">
+                                        <i class="fa-solid fa-hourglass-half me-1"></i>Pending Approval
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% elif current_user.role == 'user' %}
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'user.dashboard' %}active{% endif %}"
+                                   href="{{ url_for('user.dashboard') }}">
+                                    <i class="fa-solid fa-house me-1"></i>Home
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'user.browse_treks' %}active{% endif %}"
+                                   href="{{ url_for('user.browse_treks') }}">
+                                    <i class="fa-solid fa-compass me-1"></i>Browse Treks
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'user.bookings_history' %}active{% endif %}"
+                                   href="{{ url_for('user.bookings_history') }}">
+                                    <i class="fa-solid fa-history me-1"></i>My Bookings
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {% if request.endpoint == 'user.profile' %}active{% endif %}"
+                                   href="{{ url_for('user.profile') }}">
+                                    <i class="fa-solid fa-user-gear me-1"></i>My Profile
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+
+                <!-- Right side: search + user info + logout -->
+                <div class="d-flex align-items-center">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'admin' %}
+                            <form class="d-flex me-3" action="{{ url_for('admin.search') }}" method="GET">
+                                <select name="type" class="form-select form-select-sm bg-dark text-white border-secondary me-1" style="width: auto;">
+                                    <option value="trek">Treks</option>
+                                    <option value="staff">Staff</option>
+                                    <option value="user">Users</option>
+                                </select>
+                                <input class="form-control form-control-sm me-1 bg-dark text-white border-secondary" type="search" name="q" placeholder="Search..." required>
+                                <button class="btn btn-outline-success btn-sm" type="submit">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </button>
+                            </form>
+                        {% endif %}
+                        <span class="navbar-text text-light me-3">
+                            <i class="fa-solid fa-user me-1 text-success"></i>
+                            {{ current_user.name }} ({{ current_user.role|capitalize }})
+                        </span>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger btn-sm">
+                            <i class="fa-solid fa-right-from-bracket me-1"></i>Logout
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-success btn-sm me-2">
+                            <i class="fa-solid fa-right-to-bracket me-1"></i>Login
+                        </a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-success btn-sm">
+                            <i class="fa-solid fa-user-plus me-1"></i>Register
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- Flash Messages -->
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+                        {% if category == 'success' %}
+                            <i class="fa-solid fa-circle-check me-2"></i>
+                        {% elif category == 'danger' or category == 'error' %}
+                            <i class="fa-solid fa-circle-exclamation me-2"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-info me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="container my-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-4 mt-auto">
+        <div class="container text-center">
+            <p class="mb-1">&copy; 2026 TrekFlow Management Systems. All rights reserved.</p>
+            <p class="small text-muted mb-0">Designed for safety, guidance, and tracking in trekking activities.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

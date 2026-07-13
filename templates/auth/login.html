@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Login - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-md-5">
+        <div class="card form-card p-4">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-mountain-sun fa-3x text-success mb-3"></i>
+                    <h2 class="card-title fw-bold">Welcome Back</h2>
+                    <p class="text-muted">Sign in to manage your treks or bookings</p>
+                </div>
+                
+                <form action="{{ url_for('auth.login') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-envelope text-muted"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" required placeholder="name@example.com">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-lock text-muted"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required placeholder="••••••••">
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-0 text-muted">Don't have an account?</p>
+                    <a href="{{ url_for('auth.register') }}" class="text-success fw-bold text-decoration-none">Create a Trekker or Staff Account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

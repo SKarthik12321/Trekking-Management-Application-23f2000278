@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Register - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-md-6">
+        <div class="card form-card p-4">
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fa-solid fa-user-plus fa-3x text-success mb-3"></i>
+                    <h2 class="card-title fw-bold">Create Account</h2>
+                    <p class="text-muted">Register to search treks, guide treks or book bookings</p>
+                </div>
+                
+                <form action="{{ url_for('auth.register') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-user text-muted"></i></span>
+                            <input type="text" class="form-control" id="name" name="name" required placeholder="John Doe">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-envelope text-muted"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" required placeholder="john.doe@example.com">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="contact_number" class="form-label">Contact Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-phone text-muted"></i></span>
+                            <input type="text" class="form-control" id="contact_number" name="contact_number" placeholder="9876543210">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Register As <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-users-gear text-muted"></i></span>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="" disabled selected>Select your role...</option>
+                                <option value="user">User (Trekker)</option>
+                                <option value="staff">Trek Staff (requires admin approval)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-lock text-muted"></i></span>
+                                <input type="password" class="form-control" id="password" name="password" required placeholder="At least 6 chars">
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-lock text-muted"></i></span>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required placeholder="Repeat password">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Sign Up</button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-0 text-muted">Already have an account?</p>
+                    <a href="{{ url_for('auth.login') }}" class="text-success fw-bold text-decoration-none">Sign In Here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
