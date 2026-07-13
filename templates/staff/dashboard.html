@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Staff Dashboard - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h1 class="fw-bold"><i class="fa-solid fa-person-hiking text-success me-2"></i>Guide Dashboard</h1>
+        <p class="text-muted">Welcome back, {{ current_user.name }}. Manage your assigned treks, adjust available slots, and coordinate with trekkers.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h3 class="fw-bold mb-4"><i class="fa-solid fa-route text-success me-2"></i>My Assigned Treks</h3>
+            
+            {% if trek_stats %}
+                <div class="row g-4">
+                    {% for stat in trek_stats %}
+                        {% set trek = stat.trek %}
+                        {% set booked_count = stat.booked_count %}
+                        <div class="col-md-6">
+                            <div class="card trek-card h-100">
+                                <div class="card-header-image">
+                                    <div class="text-center">
+                                        <h4 class="fw-bold mb-0 text-white">{{ trek.name }}</h4>
+                                        <small class="text-light opacity-75"><i class="fa-solid fa-location-dot me-1 text-danger"></i>{{ trek.location }}</small>
+                                    </div>
+                                    <span class="badge badge-status badge-difficulty card-difficulty
+                                        {% if trek.difficulty == 'Easy' %}bg-success
+                                        {% elif trek.difficulty == 'Moderate' %}bg-warning text-dark
+                                        {% else %}bg-danger
+                                        {% endif %}">
+                                        {{ trek.difficulty }}
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3 text-center">
+                                        <div class="col-6 border-end">
+                                            <span class="text-muted small d-block">Duration</span>
+                                            <strong class="text-dark">{{ trek.duration_days }} Days</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <span class="text-muted small d-block">Booked Slots</span>
+                                            <strong class="text-success">{{ booked_count }} Registered</strong>
+                                        </div>
+                                    </div>
+
+                                    <ul class="list-group list-group-flush mb-4 small">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                            <span>Available Slots:</span>
+                                            <strong class="text-dark">{{ trek.available_slots }} left (of {{ trek.total_slots }})</strong>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                            <span>Date:</span>
+                                            <span class="text-muted">{{ trek.start_date }} to {{ trek.end_date }}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0">
+                                            <span>Current Status:</span>
+                                            {% if trek.status == 'Pending' %}
+                                                <span class="badge badge-status badge-pending">Pending</span>
+                                            {% elif trek.status == 'Approved' %}
+                                                <span class="badge badge-status badge-approved">Approved</span>
+                                            {% elif trek.status == 'Open' %}
+                                                <span class="badge badge-status badge-open">Open (Started)</span>
+                                            {% elif trek.status == 'Closed' %}
+                                                <span class="badge badge-status badge-closed">Closed</span>
+                                            {% elif trek.status == 'Completed' %}
+                                                <span class="badge badge-status badge-completed">Completed</span>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+
+                                    <div class="d-flex flex-wrap gap-2 justify-content-between">
+                                        <div>
+                                            <a href="{{ url_for('staff.update_trek', id=trek.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fa-solid fa-gear me-1"></i>Update Trek
+                                            </a>
+                                            <a href="{{ url_for('staff.participants', id=trek.id) }}" class="btn btn-sm btn-outline-dark">
+                                                <i class="fa-solid fa-users me-1"></i>View Trekkers
+                                            </a>
+                                        </div>
+
+                                        <div class="d-flex gap-1">
+                                            {% if trek.status in ['Approved', 'Closed'] %}
+                                                <form action="{{ url_for('staff.mark_started', id=trek.id) }}" method="POST">
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="fa-solid fa-play me-1"></i>Start
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                            
+                                            {% if trek.status == 'Open' %}
+                                                <form action="{{ url_for('staff.mark_completed', id=trek.id) }}" method="POST" onsubmit="return confirm('Marking as completed will close bookings and complete the trek. Proceed?');">
+                                                    <button type="submit" class="btn btn-sm btn-secondary">
+                                                        <i class="fa-solid fa-flag-checkered me-1"></i>Complete
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-regular fa-folder-open fa-3x mb-3 text-success"></i>
+                    <p class="mb-0 fw-semibold">No treks have been assigned to you by the Admin yet.</p>
+                    <small>Please contact the administrator to get assigned to a trek route.</small>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
