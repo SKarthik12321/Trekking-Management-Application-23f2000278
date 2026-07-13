@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard - TrekFlow{% endblock %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════════════════════
+     HERO CAROUSEL — auto-slides every 4 s, swipe + arrows
+════════════════════════════════════════════════════════ -->
+<div id="heroCarousel" class="carousel slide rounded-4 overflow-hidden mb-4 shadow"
+     data-bs-ride="carousel" data-bs-interval="4000">
+
+    <!-- Indicators (dots) -->
+    <div class="carousel-indicators">
+        {% set hero_imgs = [
+            ('img/treks/valley_flowers.png',  'Valley of Flowers, Uttarakhand',    'Alpine meadows carpeted with wildflowers'),
+            ('img/treks/mountain_pass.png',   'Roopkund & High Passes',             'Conquer legendary Himalayan passes'),
+            ('img/treks/ridge_sunset.png',    'Triund & Kedarkantha Ridge',         'Camp under a sky full of stars'),
+            ('img/treks/mountain_lake.png',   'Satopanth & Glacial Lakes',          'Mystical lakes at the top of the world'),
+            ('img/treks/forest_trail.png',    'Sandakphu Rhododendron Forest',      'Bloom-lined trails through lush forest'),
+            ('img/treks/valley_wide.png',     'Har Ki Dun Valley',                  'Where ancient rivers meet the sky')
+        ] %}
+        {% for img, title, sub in hero_imgs %}
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ loop.index0 }}"
+                    {% if loop.first %}class="active" aria-current="true"{% endif %}
+                    aria-label="{{ title }}"></button>
+        {% endfor %}
+    </div>
+
+    <!-- Slides -->
+    <div class="carousel-inner">
+        {% for img, title, sub in hero_imgs %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <img src="{{ url_for('static', filename=img) }}"
+                     class="d-block w-100"
+                     alt="{{ title }}"
+                     style="height:340px;object-fit:cover;">
+                <div class="carousel-caption d-block" style="background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:1rem;bottom:0;left:0;right:0;text-align:left;border-radius:0 0 1rem 1rem;">
+                    <h5 class="fw-bold mb-1" style="text-shadow:0 1px 4px rgba(0,0,0,0.8);">{{ title }}</h5>
+                    <p class="mb-0 small opacity-85" style="text-shadow:0 1px 3px rgba(0,0,0,0.7);">{{ sub }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Prev / Next arrows -->
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="fw-bold"><i class="fa-solid fa-house text-success me-2"></i>Welcome, {{ current_user.name }}!</h1>
+        <p class="text-muted">Find your next expedition, manage your active bookings, and check your trip progress.</p>
+    </div>
+</div>
+
+
+<div class="row g-4 mb-5">
+    <!-- Active Bookings Summary -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <h3 class="fw-bold mb-4"><i class="fa-solid fa-receipt text-success me-2"></i>My Bookings</h3>
+            
+            {% if my_bookings %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Trek Name</th>
+                                <th>Start Date</th>
+                                <th>Status</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for booking in my_bookings %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">{{ booking.trek.name }}</div>
+                                        <small class="text-muted"><i class="fa-solid fa-location-dot text-danger me-1"></i>{{ booking.trek.location }}</small>
+                                    </td>
+                                    <td>{{ booking.trek.start_date }}</td>
+                                    <td>
+                                        {% if booking.status == 'Booked' %}
+                                            <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i>Active</span>
+                                        {% elif booking.status == 'Cancelled' %}
+                                            <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Cancelled</span>
+                                        {% elif booking.status == 'Completed' %}
+                                            <span class="badge bg-secondary-subtle text-secondary"><i class="fa-solid fa-flag-checkered me-1"></i>Completed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if booking.status == 'Booked' %}
+                                            <form action="{{ url_for('user.cancel_booking', id=booking.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to cancel this booking? This will restore the available slot.');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    Cancel Trip
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-muted small">No actions</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-solid fa-passport fa-3x mb-3 text-success"></i>
+                    <p class="mb-0">You don't have any bookings logged.</p>
+                    <a href="{{ url_for('user.browse_treks') }}" class="btn btn-success btn-sm mt-3">Browse Trekking Trips</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Profile Action Card -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <h3 class="fw-bold mb-4"><i class="fa-solid fa-user-gear text-success me-2"></i>My Profile Info</h3>
+            <div class="mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 55px; height: 55px;">
+                        <i class="fa-solid fa-user fa-lg"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">{{ current_user.name }}</h5>
+                        <small class="text-muted">Registered Email: {{ current_user.email }}</small>
+                    </div>
+                </div>
+                <div class="small">
+                    <strong>Contact:</strong> {{ current_user.contact_number or 'Not provided' }}<br>
+                    <strong>Joined:</strong> {{ current_user.created_at.strftime('%Y-%m-%d') if current_user.created_at else 'N/A' }}
+                </div>
+            </div>
+            <div class="mt-auto d-grid gap-2">
+                <a href="{{ url_for('user.profile') }}" class="btn btn-outline-primary">
+                    <i class="fa-solid fa-user-pen me-1"></i>Update Profile Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Highlighted Treks -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold mb-0"><i class="fa-solid fa-compass text-success me-2"></i>Explore Open Trekking Trails</h3>
+                <a href="{{ url_for('user.browse_treks') }}" class="btn btn-link text-success text-decoration-none fw-semibold">
+                    View All Trails <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            
+            {% if available_treks %}
+                <div class="row g-4">
+                    {% for trek in available_treks[:4] %}
+                        <div class="col-md-6 col-lg-3">
+                                <div class="card trek-card h-100">
+                                    <!-- Trek Image / Initials Fallback -->
+                                    <div class="position-relative" style="height:140px;overflow:hidden;border-radius:12px 12px 0 0;">
+                                        {% if trek.image_url %}
+                                            <img src="{{ url_for('static', filename=trek.image_url) }}"
+                                                 alt="{{ trek.name }}"
+                                                 style="width:100%;height:140px;object-fit:cover;display:block;">
+                                            <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.55) 100%);"></div>
+                                        {% else %}
+                                            <div style="width:100%;height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1e3a8a,#0d9488);">
+                                                <span style="font-size:2.5rem;font-weight:900;color:rgba(255,255,255,0.9);">
+                                                    {% for word in trek.name.split()[:2] %}{{ word[0]|upper }}{% endfor %}
+                                                </span>
+                                            </div>
+                                        {% endif %}
+                                        <div class="position-absolute bottom-0 start-0 end-0 px-2 pb-2">
+                                            <h6 class="fw-bold text-white mb-0" style="font-size:0.85rem;text-shadow:0 1px 3px rgba(0,0,0,0.8);">{{ trek.name }}</h6>
+                                            <small class="text-light opacity-75" style="font-size:0.72rem;"><i class="fa-solid fa-location-dot text-danger me-1"></i>{{ trek.location }}</small>
+                                        </div>
+                                    </div>
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="badge bg-success-subtle text-success">{{ trek.difficulty }}</span>
+                                        <small class="text-muted"><i class="fa-regular fa-clock me-1"></i>{{ trek.duration_days }} Days</small>
+                                    </div>
+                                    <div class="small mb-3">
+                                        <strong>Slots:</strong> {{ trek.available_slots }} left (of {{ trek.total_slots }})
+                                    </div>
+                                    
+                                    <div class="mt-auto">
+                                        {% if trek.status == 'Open' and trek.available_slots > 0 %}
+                                            <form action="{{ url_for('user.book_trek', id=trek.id) }}" method="POST">
+                                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                                    <i class="fa-solid fa-ticket me-1"></i>Book Trek
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <button class="btn btn-secondary btn-sm w-100" disabled>
+                                                {% if trek.status != 'Open' %}
+                                                    Not Open
+                                                {% else %}
+                                                    Sold Out
+                                                {% endif %}
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    No active trek routes are open at this moment. Please check back later.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
