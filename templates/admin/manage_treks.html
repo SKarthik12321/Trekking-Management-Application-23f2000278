@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if action == 'create' %}Create Trek - TrekFlow{% elif action == 'edit' %}Edit Trek - TrekFlow{% else %}Assign Staff - TrekFlow{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-success text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    {% if action == 'create' %}Create Trek{% elif action == 'edit' %}Edit Trek{% else %}Assign Staff{% endif %}
+                </li>
+            </ol>
+        </nav>
+
+        <div class="card form-card p-4">
+            <div class="card-body">
+                <h2 class="card-title fw-bold mb-4">
+                    {% if action == 'create' %}
+                        <i class="fa-solid fa-map-location-dot text-success me-2"></i>Create New Trek
+                    {% elif action == 'edit' %}
+                        <i class="fa-solid fa-pen-to-square text-success me-2"></i>Edit Trek Details
+                    {% else %}
+                        <i class="fa-solid fa-user-plus text-success me-2"></i>Assign Trek Guide
+                    {% endif %}
+                </h2>
+
+                {% if action == 'assign' %}
+                    <!-- Assign Staff Form -->
+                    <form action="{{ url_for('admin.assign_staff', id=trek.id) }}" method="POST">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Trek Name</label>
+                            <input type="text" class="form-control" value="{{ trek.name }}" disabled>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Location</label>
+                            <input type="text" class="form-control" value="{{ trek.location }}" disabled>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="assigned_staff_id" class="form-label fw-bold">Select Approved Staff Member</label>
+                            <select class="form-select" id="assigned_staff_id" name="assigned_staff_id">
+                                <option value="">-- Unassigned --</option>
+                                {% for staff in staff_members %}
+                                    <option value="{{ staff.id }}" {% if trek.assigned_staff_id == staff.id %}selected{% endif %}>
+                                        {{ staff.name }} ({{ staff.email }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Only staff members approved by the Admin will appear in this dropdown list.</div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check me-1"></i>Assign Staff</button>
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+
+                {% else %}
+                    <!-- Create/Edit Trek Form -->
+                    <form action="{% if action == 'create' %}{{ url_for('admin.create_trek') }}{% else %}{{ url_for('admin.edit_trek', id=trek.id) }}{% endif %}" method="POST">
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-bold">Trek Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" required value="{% if action == 'edit' %}{{ trek.name }}{% endif %}" placeholder="e.g. Valley of Flowers Expedition">
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label fw-bold">Location <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="location" name="location" required value="{% if action == 'edit' %}{{ trek.location }}{% endif %}" placeholder="e.g. Uttarakhand, India">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="difficulty" class="form-label fw-bold">Difficulty <span class="text-danger">*</span></label>
+                                <select class="form-select" id="difficulty" name="difficulty" required>
+                                    <option value="" disabled selected>Select difficulty...</option>
+                                    <option value="Easy" {% if action == 'edit' and trek.difficulty == 'Easy' %}selected{% endif %}>Easy</option>
+                                    <option value="Moderate" {% if action == 'edit' and trek.difficulty == 'Moderate' %}selected{% endif %}>Moderate</option>
+                                    <option value="Hard" {% if action == 'edit' and trek.difficulty == 'Hard' %}selected{% endif %}>Hard</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="duration_days" class="form-label fw-bold">Duration (Days) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="duration_days" name="duration_days" required min="1" value="{% if action == 'edit' %}{{ trek.duration_days }}{% endif %}" placeholder="e.g. 5">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="total_slots" class="form-label fw-bold">Total Slots <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="total_slots" name="total_slots" required min="1" value="{% if action == 'edit' %}{{ trek.total_slots }}{% endif %}" placeholder="e.g. 25">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label fw-bold">Start Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" required value="{% if action == 'edit' %}{{ trek.start_date }}{% endif %}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label fw-bold">End Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" required value="{% if action == 'edit' %}{{ trek.end_date }}{% endif %}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label fw-bold">Trek Status <span class="text-danger">*</span></label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="Pending" {% if action == 'edit' and trek.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                    <option value="Approved" {% if action == 'create' or (action == 'edit' and trek.status == 'Approved') %}selected{% endif %}>Approved</option>
+                                    <option value="Open" {% if action == 'edit' and trek.status == 'Open' %}selected{% endif %}>Open</option>
+                                    <option value="Closed" {% if action == 'edit' and trek.status == 'Closed' %}selected{% endif %}>Closed</option>
+                                    <option value="Completed" {% if action == 'edit' and trek.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="assigned_staff_id" class="form-label fw-bold">Assign Staff</label>
+                                <select class="form-select" id="assigned_staff_id" name="assigned_staff_id">
+                                    <option value="">-- Leave Unassigned --</option>
+                                    {% for staff in staff_members %}
+                                        <option value="{{ staff.id }}" {% if action == 'edit' and trek.assigned_staff_id == staff.id %}selected{% endif %}>
+                                            {{ staff.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" placeholder="Describe the trek highlights, difficulty level details, packing tips, etc.">{% if action == 'edit' %}{{ trek.description }}{% endif %}</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-save me-1"></i>{% if action == 'create' %}Create Trek{% else %}Save Changes{% endif %}
+                            </button>
+                            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

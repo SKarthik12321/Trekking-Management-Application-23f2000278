@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}All Booking History - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-success text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Booking History</li>
+            </ol>
+        </nav>
+        <h1 class="fw-bold"><i class="fa-solid fa-receipt text-success me-2"></i>Global Booking History</h1>
+        <p class="text-muted">Review every booking record, cancellation, and trip completion status.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Trekker Name</th>
+                            <th>Email</th>
+                            <th>Trek Name</th>
+                            <th>Location</th>
+                            <th>Booking Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if bookings %}
+                            {% for booking in bookings %}
+                                <tr>
+                                    <td><strong>#{{ booking.id }}</strong></td>
+                                    <td>{{ booking.user.name }}</td>
+                                    <td>{{ booking.user.email }}</td>
+                                    <td>{{ booking.trek.name }}</td>
+                                    <td><i class="fa-solid fa-location-dot text-danger me-1"></i>{{ booking.trek.location }}</td>
+                                    <td>{{ booking.booking_date.strftime('%Y-%m-%d %H:%M') if booking.booking_date else 'N/A' }}</td>
+                                    <td>
+                                        {% if booking.status == 'Booked' %}
+                                            <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i>Booked</span>
+                                        {% elif booking.status == 'Cancelled' %}
+                                            <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Cancelled</span>
+                                        {% elif booking.status == 'Completed' %}
+                                            <span class="badge bg-secondary-subtle text-secondary"><i class="fa-solid fa-flag-checkered me-1"></i>Completed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">No booking history is logged yet in the database.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

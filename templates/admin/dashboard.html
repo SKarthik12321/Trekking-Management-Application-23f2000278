@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h1 class="fw-bold"><i class="fa-solid fa-gauge-high text-success me-2"></i>Admin Dashboard</h1>
+        <p class="text-muted">Manage trekking routes, approve guides, assign staff, and track bookings.</p>
+    </div>
+    <div class="col-md-6 text-md-end">
+        <a href="{{ url_for('admin.create_trek') }}" class="btn btn-primary btn-lg shadow-sm">
+            <i class="fa-solid fa-plus me-1"></i>Add New Trek
+        </a>
+    </div>
+</div>
+
+<!-- Statistical Summary Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3>{{ total_treks }}</h3>
+                    <p>Total Treks</p>
+                </div>
+                <div class="text-success"><i class="fa-solid fa-mountain fa-2x"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card stat-users">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3>{{ total_users_staff }}</h3>
+                    <p>Total Registered Accounts</p>
+                </div>
+                <div class="text-info"><i class="fa-solid fa-users fa-2x"></i></div>
+            </div>
+            <div class="mt-2 small text-muted">
+                Guides: <strong>{{ total_staff }}</strong> | Trekkers: <strong>{{ total_users }}</strong>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card stat-bookings">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3>{{ total_bookings }}</h3>
+                    <p>Total Bookings</p>
+                </div>
+                <div class="text-warning"><i class="fa-solid fa-ticket fa-2x"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Chart & Quick Navigation -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h4 class="fw-bold mb-3"><i class="fa-solid fa-chart-simple text-success me-2"></i>Active Bookings per Trek</h4>
+            {% if chart_labels %}
+                <canvas id="bookingsChart" height="150"></canvas>
+            {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fa-regular fa-folder-open fa-3x mb-3"></i>
+                    <p class="mb-0">No trek records found. Please create treks to see chart data.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+            <h4 class="fw-bold mb-4"><i class="fa-solid fa-bars-progress text-success me-2"></i>Quick Actions</h4>
+            <div class="d-grid gap-3">
+                <a href="{{ url_for('admin.manage_staff') }}" class="btn btn-outline-dark p-3 text-start rounded-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-user-check me-2 text-success"></i>Staff Requests</h6>
+                            <small class="text-muted">Approve or blacklist trek guides</small>
+                        </div>
+                        <i class="fa-solid fa-arrow-right text-muted"></i>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-dark p-3 text-start rounded-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-user-slash me-2 text-danger"></i>Manage Trekkers</h6>
+                            <small class="text-muted">View all user records & blacklist</small>
+                        </div>
+                        <i class="fa-solid fa-arrow-right text-muted"></i>
+                    </div>
+                </a>
+                <a href="{{ url_for('admin.manage_bookings') }}" class="btn btn-outline-dark p-3 text-start rounded-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-file-invoice me-2 text-warning"></i>Historical Logs</h6>
+                            <small class="text-muted">Check all bookings and status logs</small>
+                        </div>
+                        <i class="fa-solid fa-arrow-right text-muted"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Treks Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h4 class="fw-bold mb-4"><i class="fa-solid fa-mountain text-success me-2"></i>All Trek Routes</h4>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Trek Name</th>
+                            <th>Location</th>
+                            <th>Difficulty</th>
+                            <th>Duration</th>
+                            <th>Slots Available</th>
+                            <th>Assigned Staff</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if treks %}
+                            {% for trek in treks %}
+                                <tr>
+                                    <td><strong>#{{ trek.id }}</strong></td>
+                                    <td>{{ trek.name }}</td>
+                                    <td><i class="fa-solid fa-location-dot text-danger me-1"></i>{{ trek.location }}</td>
+                                    <td>
+                                        {% if trek.difficulty == 'Easy' %}
+                                            <span class="badge bg-success-subtle text-success">Easy</span>
+                                        {% elif trek.difficulty == 'Moderate' %}
+                                            <span class="badge bg-warning-subtle text-warning">Moderate</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger">Hard</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ trek.duration_days }} days</td>
+                                    <td>
+                                        <div class="fw-bold">{{ trek.available_slots }} / {{ trek.total_slots }}</div>
+                                        <div class="progress mt-1" style="height: 5px;">
+                                            {% set slot_percentage = (trek.available_slots / trek.total_slots) * 100 %}
+                                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ slot_percentage }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if trek.assigned_staff %}
+                                            <span class="text-dark fw-semibold"><i class="fa-solid fa-user me-1 text-primary"></i>{{ trek.assigned_staff.name }}</span>
+                                        {% else %}
+                                            <span class="text-danger italic small"><i class="fa-solid fa-triangle-exclamation me-1"></i>Unassigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if trek.status == 'Pending' %}
+                                            <span class="badge badge-status badge-pending">Pending</span>
+                                        {% elif trek.status == 'Approved' %}
+                                            <span class="badge badge-status badge-approved">Approved</span>
+                                        {% elif trek.status == 'Open' %}
+                                            <span class="badge badge-status badge-open">Open</span>
+                                        {% elif trek.status == 'Closed' %}
+                                            <span class="badge badge-status badge-closed">Closed</span>
+                                        {% elif trek.status == 'Completed' %}
+                                            <span class="badge badge-status badge-completed">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{{ url_for('admin.edit_trek', id=trek.id) }}" class="btn btn-outline-secondary btn-sm" title="Edit Trek">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin.assign_staff', id=trek.id) }}" class="btn btn-outline-info btn-sm" title="Assign Staff">
+                                                <i class="fa-solid fa-user-plus"></i>
+                                            </a>
+                                            <form action="{{ url_for('admin.delete_trek', id=trek.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this trek? This action is irreversible.');">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete Trek">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">No treks registered yet. Let's create one!</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js CDN for statistics visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        {% if chart_labels %}
+        const ctx = document.getElementById('bookingsChart').getContext('2d');
+        const bookingsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels|tojson }},
+                datasets: [{
+                    label: 'Booked Spots',
+                    data: {{ chart_data|tojson }},
+                    backgroundColor: 'rgba(46, 125, 50, 0.65)',
+                    borderColor: 'rgba(46, 125, 50, 1)',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}
