@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card form-card p-4">
+            <div class="card-body">
+                <h2 class="card-title fw-bold mb-4"><i class="fa-solid fa-user-gear text-success me-2"></i>My Profile Settings</h2>
+                
+                <form action="{{ url_for('user.profile') }}" method="POST">
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold">Email Address</label>
+                        <input type="email" class="form-control bg-light" id="email" value="{{ current_user.email }}" readonly disabled>
+                        <div class="form-text">Your email address is used for login and cannot be altered.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-bold">Full Name <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-user text-muted"></i></span>
+                            <input type="text" class="form-control" id="name" name="name" required value="{{ current_user.name }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="contact_number" class="form-label fw-bold">Contact Number</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-phone text-muted"></i></span>
+                            <input type="text" class="form-control" id="contact_number" name="contact_number" value="{{ current_user.contact_number or '' }}" placeholder="9876543210">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="new_password" class="form-label fw-bold">Change Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-lock text-muted"></i></span>
+                            <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Leave blank to keep current password">
+                        </div>
+                        <div class="form-text">If you wish to change your password, enter at least 6 characters.</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fa-solid fa-check me-1"></i>Save Profile Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
