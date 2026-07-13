@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - TrekFlow{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-success text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Search Results</li>
+            </ol>
+        </nav>
+        <h1 class="fw-bold"><i class="fa-solid fa-magnifying-glass text-success me-2"></i>Search Results</h1>
+        <p class="text-muted">Showing results for <strong>"{{ query }}"</strong> in category <strong>"{{ search_type|capitalize }}"</strong></p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            
+            <!-- Category Selection buttons to switch context -->
+            <div class="d-flex gap-2 mb-4">
+                <a href="{{ url_for('admin.search', type='trek', q=query) }}" class="btn btn-sm {% if search_type == 'trek' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                    Treks
+                </a>
+                <a href="{{ url_for('admin.search', type='staff', q=query) }}" class="btn btn-sm {% if search_type == 'staff' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                    Guides (Staff)
+                </a>
+                <a href="{{ url_for('admin.search', type='user', q=query) }}" class="btn btn-sm {% if search_type == 'user' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+                    Trekkers (Users)
+                </a>
+            </div>
+
+            {% if search_type == 'trek' %}
+                <!-- Trek Results -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Trek Name</th>
+                                <th>Location</th>
+                                <th>Difficulty</th>
+                                <th>Duration</th>
+                                <th>Slots</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if treks %}
+                                {% for trek in treks %}
+                                    <tr>
+                                        <td><strong>#{{ trek.id }}</strong></td>
+                                        <td>{{ trek.name }}</td>
+                                        <td>{{ trek.location }}</td>
+                                        <td>{{ trek.difficulty }}</td>
+                                        <td>{{ trek.duration_days }} days</td>
+                                        <td>{{ trek.available_slots }} / {{ trek.total_slots }}</td>
+                                        <td>{{ trek.status }}</td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <a href="{{ url_for('admin.edit_trek', id=trek.id) }}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-pen"></i></a>
+                                                <a href="{{ url_for('admin.assign_staff', id=trek.id) }}" class="btn btn-outline-info btn-sm"><i class="fa-solid fa-user-plus"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-4 text-muted">No matching trek routes found.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% elif search_type == 'staff' %}
+                <!-- Staff Results -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if staff %}
+                                {% for member in staff %}
+                                    <tr>
+                                        <td><strong>#{{ member.id }}</strong></td>
+                                        <td>{{ member.name }}</td>
+                                        <td>{{ member.email }}</td>
+                                        <td>{{ member.contact_number or 'N/A' }}</td>
+                                        <td>{{ member.status|capitalize }}</td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                {% if member.status == 'pending' %}
+                                                    <form action="{{ url_for('admin.approve_staff', id=member.id) }}" method="POST">
+                                                        <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                                                    </form>
+                                                {% endif %}
+                                                {% if member.status != 'blacklisted' %}
+                                                    <form action="{{ url_for('admin.blacklist_staff', id=member.id) }}" method="POST">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">Blacklist</button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No matching guides found.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% elif search_type == 'user' %}
+                <!-- User Results -->
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if users %}
+                                {% for u in users %}
+                                    <tr>
+                                        <td><strong>#{{ u.id }}</strong></td>
+                                        <td>{{ u.name }}</td>
+                                        <td>{{ u.email }}</td>
+                                        <td>{{ u.contact_number or 'N/A' }}</td>
+                                        <td>{{ u.status|capitalize }}</td>
+                                        <td class="text-center">
+                                            {% if u.status != 'blacklisted' %}
+                                                <form action="{{ url_for('admin.blacklist_user', id=u.id) }}" method="POST">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Blacklist</button>
+                                                </form>
+                                            {% else %}
+                                                <span class="text-danger small fw-semibold">Blacklisted</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No matching trekkers found.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
