@@ -1,0 +1,17 @@
+{
+  "name": "Trekking Management Application - V2",
+  "short_name": "TMA-V2",
+  "description": "Comprehensive trekking routes, booking tracking, and staff management app.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#001b94",
+  "theme_color": "#001b94",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

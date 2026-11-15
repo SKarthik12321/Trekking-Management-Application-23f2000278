@@ -1,0 +1,533 @@
+/* ==========================================================================
+   TrekFlow V2 - Modern IndiGo Airlines Travel Expedition Design System
+   ========================================================================== */
+
+:root {
+  /* IndiGo Airlines Signature Palette */
+  --indigo-deep: #001b94;            /* Iconic deep authoritative navy */
+  --indigo-navy-dark: #00126b;       /* Extra deep blue for active/hover */
+  --indigo-primary: #0056b3;         /* Interactive vibrant mid-blue */
+  --indigo-hover: #004494;
+  --indigo-cyan: #00d2ff;            /* Bright sky cyan accent pill */
+  --indigo-sky-soft: #e8f1fc;        /* Light mid-blue soft background */
+  --indigo-sky-subtle: #f0f6ff;      /* Extremely light sky tint */
+  --indigo-canvas: #f2f6fc;          /* Modern light-blue tinted clean canvas */
+  --indigo-surface: #ffffff;          /* Pure white card surface */
+  --indigo-border: rgba(0, 27, 148, 0.08); /* Crisp subtle border */
+  --indigo-text-dark: #0b1a30;       /* High-contrast deep navy text */
+  --indigo-text-muted: #536b88;      /* Muted slate-blue text */
+
+  /* Curated Status Colors */
+  --status-open: #059669;
+  --status-open-bg: #ecfdf5;
+  --status-moderate: #d97706;
+  --status-moderate-bg: #fffbeb;
+  --status-hard: #dc2626;
+  --status-hard-bg: #fef2f2;
+
+  /* Sizing and Radii */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--indigo-canvas);
+  color: var(--indigo-text-dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+/* ==========================================================================
+   IndiGo Airlines Signature Deep Navy Navigation Bar
+   ========================================================================== */
+
+.trek-navbar {
+  background: var(--indigo-deep) !important;
+  border-bottom: 2px solid var(--indigo-primary);
+  box-shadow: 0 4px 20px rgba(0, 27, 148, 0.2);
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  transition: all 0.25s ease;
+}
+
+.brand-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 210, 255, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.navbar-brand:hover .brand-icon-box {
+  transform: rotate(-8deg) scale(1.05);
+}
+
+.brand-title {
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.03em;
+  color: #ffffff !important;
+}
+
+.trek-version-badge {
+  background: var(--indigo-cyan);
+  color: var(--indigo-deep);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Nav links styling */
+.trek-navbar .nav-link {
+  color: #dbeafe !important;
+  font-weight: 500;
+  font-size: 0.92rem;
+  padding: 0.5rem 0.85rem !important;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.trek-navbar .nav-link:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.trek-navbar .nav-link.router-link-active {
+  color: #ffffff !important;
+  background: rgba(0, 210, 255, 0.2);
+  font-weight: 600;
+}
+
+/* IndiGo CTA & Action Buttons */
+.btn-indigo-primary {
+  background: var(--indigo-primary) !important;
+  color: #ffffff !important;
+  border: none;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 1.15rem;
+  box-shadow: 0 4px 14px rgba(0, 86, 179, 0.35);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-indigo-primary:hover {
+  background: var(--indigo-hover) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(0, 86, 179, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-indigo-cyan {
+  background: var(--indigo-cyan) !important;
+  color: var(--indigo-deep) !important;
+  font-weight: 700 !important;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 1.15rem;
+  box-shadow: 0 4px 14px rgba(0, 210, 255, 0.35);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-indigo-cyan:hover {
+  background: #38e1ff !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 210, 255, 0.5);
+}
+
+.btn-indigo-ghost {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  padding: 0.45rem 1rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-indigo-ghost:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-indigo-outline {
+  border: 1px solid var(--indigo-primary) !important;
+  color: var(--indigo-primary) !important;
+  background: transparent !important;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-indigo-outline:hover {
+  background: var(--indigo-sky-soft) !important;
+  color: var(--indigo-deep) !important;
+}
+
+.user-avatar-pill {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--indigo-primary) 0%, var(--indigo-cyan) 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 210, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ==========================================================================
+   Modern Modal & Card Headers (IndiGo Navy)
+   ========================================================================== */
+
+.modal-header-indigo {
+  background: linear-gradient(135deg, var(--indigo-deep) 0%, #003699 100%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-header-indigo .modal-title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.auth-card-header {
+  background: linear-gradient(135deg, var(--indigo-deep) 0%, #002b8a 60%, var(--indigo-primary) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card-header::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(0, 210, 255, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Auth Page Background Wrapper (Login & Register)
+   ========================================================================== */
+
+.auth-bg-wrapper {
+  min-height: 100vh;
+  background:
+    linear-gradient(160deg, rgba(0, 27, 148, 0.88) 0%, rgba(0, 50, 160, 0.80) 50%, rgba(0, 86, 179, 0.75) 100%),
+    url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat fixed;
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+}
+
+.auth-bg-wrapper .card {
+  backdrop-filter: blur(2px);
+}
+
+/* ==========================================================================
+   Hero Section & Photographic Banners
+   ========================================================================== */
+
+.hero-banner {
+  background: linear-gradient(135deg, rgba(0, 27, 148, 0.92) 0%, rgba(0, 18, 107, 0.88) 100%),
+              url('https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+  color: white;
+  border-radius: var(--radius-lg);
+  padding: 3.75rem 2.5rem;
+  margin-bottom: 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 45px -10px rgba(0, 27, 148, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-banner::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(circle at 85% 20%, rgba(0, 210, 255, 0.2) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Mountain Panoramic Banner for Dashboards */
+.mountain-banner {
+  height: 160px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(0, 27, 148, 0.75) 0%, rgba(0, 86, 179, 0.6) 100%),
+              url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1400&q=80') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  padding: 2rem;
+  color: #ffffff;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 8px 24px rgba(0, 27, 148, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.mountain-banner h4 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.25rem;
+}
+
+/* ==========================================================================
+   Trek Card Aesthetics (Photos + Clean Details)
+   ========================================================================== */
+
+.trek-card {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--indigo-border);
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 27, 148, 0.04);
+}
+
+.trek-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0, 27, 148, 0.1) !important;
+  border-color: rgba(0, 86, 179, 0.3);
+}
+
+.trek-card-media {
+  position: relative;
+  height: 155px;
+  overflow: hidden;
+  background: var(--indigo-deep);
+}
+
+.trek-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.trek-card:hover .trek-card-img {
+  transform: scale(1.06);
+}
+
+.trek-card-overlay-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.trek-card-overlay-badges .badge {
+  pointer-events: auto;
+}
+
+/* Multi-image interactive carousel controls */
+.carousel-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  z-index: 3;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(2px);
+  padding: 0;
+}
+
+.carousel-nav-btn:hover {
+  background: var(--indigo-primary);
+  color: #ffffff;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-nav-prev {
+  left: 8px;
+}
+
+.carousel-nav-next {
+  right: 8px;
+}
+
+.carousel-dots-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 3;
+}
+
+.carousel-dots-indicator .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.carousel-dots-indicator .dot.active {
+  background: #ffffff;
+  width: 14px;
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(0, 210, 255, 0.8);
+}
+
+/* Stat Widget Cards */
+.stat-widget {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--indigo-border);
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 27, 148, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-widget:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 27, 148, 0.08);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.45rem;
+}
+
+.stat-icon-indigo {
+  background: var(--indigo-sky-soft);
+  color: var(--indigo-primary);
+}
+
+/* Difficulty badges */
+.badge-difficulty-easy {
+  background-color: var(--status-open);
+  color: white;
+}
+.badge-difficulty-moderate {
+  background-color: var(--status-moderate);
+  color: white;
+}
+.badge-difficulty-hard {
+  background-color: var(--status-hard);
+  color: white;
+}
+
+/* Status badges */
+.badge-status-open {
+  background-color: var(--status-open);
+  color: white;
+}
+.badge-status-closed {
+  background-color: #64748b;
+  color: white;
+}
+.badge-status-completed {
+  background-color: var(--indigo-primary);
+  color: white;
+}
+.badge-status-approved {
+  background-color: #0284c7;
+  color: white;
+}
+.badge-status-pending {
+  background-color: #f59e0b;
+  color: #000;
+}
+
+/* Utility Colors */
+.text-indigo-primary {
+  color: var(--indigo-primary) !important;
+}
+
+.text-indigo-deep {
+  color: var(--indigo-deep) !important;
+}
+
+.text-indigo-cyan {
+  color: var(--indigo-cyan) !important;
+}
+
+.bg-indigo-soft {
+  background-color: var(--indigo-sky-soft) !important;
+  color: var(--indigo-primary) !important;
+}
+
+/* Modern App Footer */
+footer.app-footer {
+  background: #00135c !important;
+  border-top: 2px solid var(--indigo-primary);
+  color: #93b4e6;
+}
+
+/* Custom scrollbars and responsive tables */
+.table-responsive {
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.toast-container {
+  z-index: 2000;
+}
