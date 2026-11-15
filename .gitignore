@@ -36,3 +36,4 @@ celerybeat.pid
 backend/exports/*.csv
 backend/reports/*.pdf
 backend/reports/*.html
+backend/trekking.db
