@@ -42,6 +42,14 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_bp)
     app.register_blueprint(staff_bp)
 
+    # Programmatic database table creation & superuser seed
+    with app.app_context():
+        db.create_all()
+        # Seed default superuser admin and sample routes if database is fresh
+        from models.user import User
+        if not User.query.filter_by(role='admin').first():
+            seed_database(app)
+
     # Health check & public landing stats
     @app.route('/api/health', methods=['GET'])
     def health_check():
