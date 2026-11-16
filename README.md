@@ -103,7 +103,7 @@ trekking_management_app_23f2000278/
 │   ├── init_db.py                  # Programmatic DB & Superuser Admin seeder
 │   ├── test_app.py                 # Comprehensive end-to-end integration test suite
 │   ├── requirements.txt            # Python dependencies
-│   ├── trekking.db                 # SQLite database (auto-generated)
+│   ├── trekking.db                 # SQLite database (auto-generated programmatically)
 │   │
 │   ├── models/                     # Programmatic SQLAlchemy ORM Models
 │   │   ├── __init__.py             # Model exports
@@ -144,7 +144,7 @@ trekking_management_app_23f2000278/
 │       ├── main.js                 # App initialization & plugin registration
 │       ├── App.vue                 # Root component
 │       ├── router/index.js         # Vue Router with navigation auth guards
-│       ├── store/auth.js           # Pinia reactive auth & state management
+│       ├── store/auth.js           # Reactive auth & state management
 │       ├── components/             # Reusable Bootstrap UI components
 │       │   ├── Navbar.vue
 │       │   ├── Footer.vue
@@ -169,10 +169,6 @@ trekking_management_app_23f2000278/
 │           ├── AdminBookingsView.vue
 │           └── AdminReportsView.vue
 │
-├── run_backend.sh                  # One-click backend startup script
-├── run_celery.sh                   # One-click Celery worker startup script
-├── run_celery_beat.sh              # One-click Celery beat scheduler script
-├── Project_Report_23f2000278.docx  # Official Project Report (DOCX format)
 ├── Project_Report_23f2000278.pdf   # Official Project Report (PDF format)
 └── README.md                       # Comprehensive documentation
 ```
@@ -203,33 +199,42 @@ Upon initial launch, `init_db.py` automatically populates the database with the 
 
 ### 1. Launch Backend API
 ```bash
-# Navigate to the project root
-cd trekking_management_app_23f2000278
+# Navigate to backend directory
+cd backend
 
-# Run the backend launch script
-bash run_backend.sh
+# Create virtual environment (first time setup)
+python -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start Flask API server (creates DB & seeds admin programmatically)
+python app.py
 ```
 *The Flask API starts on `http://127.0.0.1:5001`. It automatically initializes the SQLite database, creates all tables programmatically, and seeds the pre-existing superuser Admin and demo treks.*
 
 ### 2. Launch Celery Worker & Beat Scheduler
-Open two separate terminal windows for batch jobs:
+Open two separate terminal windows for background batch jobs:
 
 **Terminal 2 (Celery Worker):**
 ```bash
-cd trekking_management_app_23f2000278
-bash run_celery.sh
+cd backend
+source .venv/bin/activate
+celery -A tasks.celery_app.celery_app worker --loglevel=info
 ```
 
 **Terminal 3 (Celery Beat Periodic Scheduler):**
 ```bash
-cd trekking_management_app_23f2000278
-bash run_celery_beat.sh
+cd backend
+source .venv/bin/activate
+celery -A tasks.celery_app.celery_app beat --loglevel=info
 ```
 
 ### 3. Frontend Development (Optional)
 The Flask server directly serves the pre-compiled production build from `frontend/dist/`. To run the Vite hot-reloading dev server:
 ```bash
-cd trekking_management_app_23f2000278/frontend
+cd frontend
 npm install
 npm run dev
 ```
