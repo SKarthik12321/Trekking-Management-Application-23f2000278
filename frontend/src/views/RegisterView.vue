@@ -55,7 +55,10 @@
                       type="tel"
                       class="form-control"
                       v-model="form.contact_number"
-                      placeholder="+91 9876543210"
+                      placeholder="10-digit number or +91 followed by 10 digits"
+                      pattern="(?:\+91[\s-]?)?[0-9]{10}"
+                      title="Enter exactly 10 digits, optionally prefixed with +91."
+                      autocomplete="tel"
                     />
                   </div>
                 </div>
@@ -130,19 +133,21 @@ import { api, setAuth, notify } from '@/store/auth';
 
 const router = useRouter();
 
+// reactive form object — fields map directly to the /auth/register API payload
 const form = reactive({
   name: '',
   username: '',
   email: '',
   contact_number: '',
   password: '',
-  confirmPassword: '',
+  confirmPassword: '', // only used client-side for validation, not sent to backend
 });
 
 const loading = ref(false);
 const errorMessage = ref('');
 
 const handleRegister = async () => {
+  // client-side checks before hitting the API — saves a round trip for obvious mistakes
   if (form.password !== form.confirmPassword) {
     errorMessage.value = 'Passwords do not match!';
     return;
@@ -165,8 +170,16 @@ const handleRegister = async () => {
     });
 
     const { token, user } = res.data;
-    setAuth(token, user);
-    notify('Registration successful! Welcome to TrekFlow.', 'success');
+    setAuth(token, user); // log in immediately after a successful registration
+    const emailNotice = {
+      sent: ' A welcome email was sent.',
+      disabled: ' Email sending is disabled; no email was sent.',
+      failed: ' The account was created, but the welcome email could not be sent.',
+    }[res.data.email_status] || '';
+    notify(
+      `Registration successful! Welcome to TrekFlow.${emailNotice}`,
+      res.data.email_status === 'failed' ? 'warning' : 'success',
+    );
     router.push('/dashboard');
   } catch (err) {
     console.error('Registration failed:', err);

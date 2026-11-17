@@ -1,5 +1,5 @@
 // Service worker for Trekking Management Application - V2
-const CACHE_NAME = 'tma-static-v1';
+const CACHE_NAME = 'tma-static-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -25,12 +25,30 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET' || event.request.url.includes('/api/')) {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  if (request.method !== 'GET' || url.pathname.startsWith('/api/')) {
     return;
   }
+
+  if (request.mode === 'navigate' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (!response.ok) return response;
+          return caches.open(CACHE_NAME)
+            .then((cache) => cache.put(request, response.clone()))
+            .then(() => response);
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
+    caches.match(request).then((cachedResponse) => {
+      return cachedResponse || fetch(request);
     })
   );
 });

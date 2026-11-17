@@ -40,6 +40,13 @@ class TrekkingAppTestCase(unittest.TestCase):
             from init_db import seed_database
             seed_database(cls.app)
 
+    def cleanup_test_accounts(self, emails):
+        with self.app.app_context():
+            users = User.query.filter(User.email.in_(emails)).all()
+            for user in users:
+                db.session.delete(user)
+            db.session.commit()
+
     def test_01_public_endpoints(self):
         """Test health check and public platform statistics."""
         res = self.client.get('/api/health')
@@ -102,6 +109,10 @@ class TrekkingAppTestCase(unittest.TestCase):
         """Test trekker self-registration and field validation."""
         import uuid
         unique_suffix = uuid.uuid4().hex[:6]
+        self.addCleanup(self.cleanup_test_accounts, [
+            f'test_{unique_suffix}@example.com',
+            f'validation_staff_{unique_suffix}@example.com'
+        ])
         res = self.client.post('/api/auth/register', json={
             'name': 'Test Trekker',
             'username': f'test_user_{unique_suffix}',
@@ -112,15 +123,91 @@ class TrekkingAppTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 201)
         data = res.get_json()
         self.assertEqual(data['user']['role'], 'user')
+        self.assertEqual(data['user']['contact_number'], '9999911111')
+        self.assertEqual(data['email_status'], 'disabled')
 
-        # Test duplicate email rejection
+        # Reject case-insensitive duplicate usernames and emails.
         res_dup = self.client.post('/api/auth/register', json={
             'name': 'Test Trekker 2',
-            'username': f'test_user2_{unique_suffix}',
-            'email': f'test_{unique_suffix}@example.com',
+            'username': f'TEST_USER_{unique_suffix}',
+            'email': f'other_{unique_suffix}@example.com',
             'password': 'Password@123'
         })
         self.assertEqual(res_dup.status_code, 409)
+        res_dup_email = self.client.post('/api/auth/register', json={
+            'name': 'Test Trekker 3',
+            'username': f'test_user3_{unique_suffix}',
+            'email': f'TEST_{unique_suffix}@EXAMPLE.COM',
+            'password': 'Password@123'
+        })
+        self.assertEqual(res_dup_email.status_code, 409)
+
+        res_short_phone = self.client.post('/api/auth/register', json={
+            'name': 'Short Phone Trekker',
+            'username': f'short_phone_{unique_suffix}',
+            'email': f'short_phone_{unique_suffix}@example.com',
+            'password': 'Password@123',
+            'contact_number': '123456789'
+        })
+        self.assertEqual(res_short_phone.status_code, 400)
+
+        res_profile_short_phone = self.client.put('/api/auth/profile', headers={
+            'Authorization': f"Bearer {data['token']}"
+        }, json={'contact_number': '123456789'})
+        self.assertEqual(res_profile_short_phone.status_code, 400)
+
+        res_profile_phone = self.client.put('/api/auth/profile', headers={
+            'Authorization': f"Bearer {data['token']}"
+        }, json={'contact_number': '7867543213'})
+        self.assertEqual(res_profile_phone.status_code, 200)
+        self.assertEqual(res_profile_phone.get_json()['user']['contact_number'], '7867543213')
+
+        res_admin = self.client.post('/api/auth/login', json={
+            'username': 'admin@gmail.com',
+            'password': 'admin123'
+        })
+        admin_token = res_admin.get_json()['token']
+        staff_data = {
+            'name': 'Validation Staff',
+            'username': f'validation_staff_{unique_suffix}',
+            'email': f'validation_staff_{unique_suffix}@example.com',
+            'contact_number': '123456789',
+            'password': 'Password@123'
+        }
+        res_staff_short_phone = self.client.post('/api/admin/staff', headers={
+            'Authorization': f'Bearer {admin_token}'
+        }, json=staff_data)
+        self.assertEqual(res_staff_short_phone.status_code, 400)
+        staff_data['contact_number'] = '+91 78675 43210'
+        res_staff = self.client.post('/api/admin/staff', headers={
+            'Authorization': f'Bearer {admin_token}'
+        }, json=staff_data)
+        self.assertEqual(res_staff.status_code, 201)
+        self.assertEqual(res_staff.get_json()['staff']['contact_number'], '7867543210')
+
+    def test_03_registration_sends_welcome_email_when_smtp_enabled(self):
+        from unittest.mock import patch
+
+        import uuid
+        unique_suffix = uuid.uuid4().hex[:6]
+        email = f'email_test_{unique_suffix}@example.com'
+        self.addCleanup(self.cleanup_test_accounts, [email])
+        smtp_enabled = self.app.config['SMTP_ENABLED']
+        self.addCleanup(self.app.config.__setitem__, 'SMTP_ENABLED', smtp_enabled)
+        self.app.config['SMTP_ENABLED'] = True
+
+        with patch('routes.auth_routes.send_email') as send_email:
+            response = self.client.post('/api/auth/register', json={
+                'name': 'Email Test Trekker',
+                'username': f'email_test_{unique_suffix}',
+                'email': email,
+                'password': 'Password@123'
+            })
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json()['email_status'], 'sent')
+        send_email.assert_called_once()
+        self.assertEqual(send_email.call_args.args[0], email)
 
     def test_04_trek_caching_and_crud(self):
         """Test listing treks, Redis cache headers, and Admin trek creation."""
@@ -162,10 +249,13 @@ class TrekkingAppTestCase(unittest.TestCase):
 
     def test_05_booking_business_rules(self):
         """Test booking business constraints: duplicate bookings, overbooking, and cancellation."""
+        from unittest.mock import patch
+
         with self.app.app_context():
             # Create a dedicated fresh trekker for booking tests
             import uuid
             unique_name = f"user_book_{uuid.uuid4().hex[:6]}"
+            self.addCleanup(self.cleanup_test_accounts, [f"{unique_name}@example.com"])
             test_user = User(
                 username=unique_name,
                 email=f"{unique_name}@example.com",
@@ -193,14 +283,23 @@ class TrekkingAppTestCase(unittest.TestCase):
         initial_slots = target_trek['available_slots']
 
         # 1. Successful Booking
-        res_book = self.client.post('/api/bookings', headers={
-            'Authorization': f'Bearer {user_token}'
-        }, json={
-            'trek_id': target_trek['id'],
-            'num_seats': 2,
-            'payment_method': 'UPI'
-        })
+        smtp_enabled = self.app.config['SMTP_ENABLED']
+        self.addCleanup(self.app.config.__setitem__, 'SMTP_ENABLED', smtp_enabled)
+        self.app.config['SMTP_ENABLED'] = True
+        with patch('routes.booking_routes.send_email') as send_email:
+            res_book = self.client.post('/api/bookings', headers={
+                'Authorization': f'Bearer {user_token}'
+            }, json={
+                'trek_id': target_trek['id'],
+                'num_seats': 2,
+                'payment_method': 'UPI'
+            })
         self.assertEqual(res_book.status_code, 201)
+        self.assertEqual(res_book.get_json()['email_status'], 'sent')
+        send_email.assert_called_once()
+        receipt, = send_email.call_args.kwargs['attachments']
+        self.assertEqual(receipt[0], f"TrekFlow_Booking_{res_book.get_json()['booking']['id']}.pdf")
+        self.assertTrue(receipt[1].startswith(b'%PDF-'))
         booking = res_book.get_json()['booking']
         booking_id = booking['id']
         self.assertEqual(booking['num_seats'], 2)
@@ -222,6 +321,7 @@ class TrekkingAppTestCase(unittest.TestCase):
         # 3. Rule: Prevent overbooking beyond available slots
         # Create a new trekker
         unique_user2 = f"overbook_{uuid.uuid4().hex[:6]}"
+        self.addCleanup(self.cleanup_test_accounts, [f"{unique_user2}@example.com"])
         with self.app.app_context():
             u2 = User(username=unique_user2, email=f"{unique_user2}@example.com", name="Overbook Tester", role="user")
             u2.set_password("User@123")
@@ -282,10 +382,12 @@ class TrekkingAppTestCase(unittest.TestCase):
         # 1. Daily reminders
         res_reminders = send_daily_reminders()
         self.assertEqual(res_reminders['status'], 'SUCCESS')
+        self.assertEqual(res_reminders['email_status'], 'disabled')
 
         # 2. Monthly report (generates PDF and HTML)
         res_report = generate_monthly_report()
         self.assertEqual(res_report['status'], 'SUCCESS')
+        self.assertEqual(res_report['email_status'], 'disabled')
         self.assertTrue(os.path.exists(os.path.join(self.app.config['REPORTS_DIR'], res_report['pdf_file'])))
         self.assertTrue(os.path.exists(os.path.join(self.app.config['REPORTS_DIR'], res_report['html_file'])))
 

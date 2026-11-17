@@ -56,6 +56,7 @@ Adventure organizations coordinate multi-day treks across diverse geographical t
 * **Self-Registration:** Seamless public sign-up and JWT authentication.
 * **Trek Discovery:** Search and filter treks dynamically by difficulty (`Easy`, `Moderate`, `Hard`), location, duration, and price.
 * **Booking Engine:** Book open treks with real-time seat decrement, payment simulation, and concurrency validation.
+* **Email Receipts:** Receive a styled booking confirmation with a PDF receipt after each successful booking when SMTP is enabled.
 * **Booking History & Status:** Track upcoming and completed treks with full details.
 * **Cancellation:** Cancel bookings prior to trek commencement with automated slot restoration.
 * **Async CSV Export:** Trigger background batch export of complete booking history via Celery with in-app alert notifications.
@@ -68,12 +69,12 @@ Adventure organizations coordinate multi-day treks across diverse geographical t
 1. **Scheduled Daily Reminders:**
    * Runs daily at **08:00 AM IST** via Celery Beat.
    * Identifies treks scheduled to depart within the next 3 days.
-   * Dispatches packing instructions, emergency contacts, and departure reminders to registered trekkers via in-app notifications and simulated email/SMS.
+   * Saves in-app notifications and sends email when SMTP is enabled.
 
 2. **Scheduled Monthly Activity Report:**
    * Triggers automatically on the **1st of every month at midnight** via Celery Beat.
    * Compiles monthly metrics: total conducted treks, active participants, top popular routes, and revenue.
-   * Generates formatted **PDF** (via ReportLab) and responsive **HTML** reports, saving them to `backend/reports/` and notifying the Admin.
+   * Generates formatted **PDF** (via ReportLab) and responsive **HTML** reports, saving them to `backend/reports/`; emails the HTML report to Admin when SMTP is enabled.
 
 3. **User-Triggered Async CSV Export:**
    * Trekkers click "Export CSV" on their dashboard.
@@ -129,6 +130,7 @@ trekking_management_app_23f2000278/
 │   │   ├── __init__.py
 │   │   ├── auth.py                 # JWT token generation, decoding & RBAC decorators
 │   │   ├── cache.py                # Redis caching decorators & invalidation
+│   │   ├── email_service.py        # Optional SMTP mail delivery
 │   │   └── pdf_generator.py        # ReportLab PDF & HTML report builder
 │   │
 │   ├── exports/                    # Auto-generated user CSV exports
@@ -192,6 +194,33 @@ Upon initial launch, `init_db.py` automatically populates the database with the 
 
 ## ⚙️ Quick Start & Execution Guide
 
+### Optional: test outgoing email locally with MailHog (Docker)
+
+Gmail SMTP in `backend/.env` sends to real inboxes and does not require Docker. Use MailHog only if you want captured test messages that are not delivered to Gmail, IITM, or any other real mailbox.
+
+Start MailHog in Docker (run once):
+```bash
+docker run -d --name tma-mailhog -p 1025:1025 -p 8025:8025 mailhog/mailhog:v1.0.1
+```
+If the container already exists, start it with `docker start tma-mailhog`. Open its inbox at `http://127.0.0.1:8025`.
+
+In the terminal where Flask will run, enable SMTP before starting the backend:
+```bash
+cd backend
+source .venv/bin/activate
+export SMTP_ENABLED=true
+export SMTP_HOST=127.0.0.1
+export SMTP_PORT=1025
+export SMTP_USE_TLS=false
+export SMTP_FROM_EMAIL=no-reply@trekflow.local
+python app.py
+```
+Register with an email address you control, then look for the welcome message in the MailHog inbox. After a successful demo booking, look for a styled confirmation email with a PDF receipt attached. The payment is simulated; no real charge is made. The address is only used as the message recipient; MailHog does not contact that address. When SMTP is disabled (the default), the app says no email was sent.
+
+To send scheduled reminders or monthly reports through MailHog, set the same `SMTP_*` variables in the Celery worker terminal before starting it. Stop MailHog with `docker stop tma-mailhog`.
+
+For real delivery through Gmail, use `smtp.gmail.com`, port `587`, and STARTTLS (`SMTP_USE_TLS=true`) with a Google App Password. Put those values in your local, ignored `backend/.env`, then run `source .env` from the backend directory before starting Flask or the Celery worker. The `.env` file is excluded from Git; never commit credentials. MailHog is safer for local-only demos.
+
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+ (optional, since production frontend is pre-built in `dist/`)
@@ -209,10 +238,13 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
+# Load local SMTP credentials (edit backend/.env first)
+source .env
+
 # Start Flask API server (creates DB & seeds admin programmatically)
 python app.py
 ```
-*The Flask API starts on `http://127.0.0.1:5001`. It automatically initializes the SQLite database, creates all tables programmatically, and seeds the pre-existing superuser Admin and demo treks.*
+*The Flask API always uses `http://127.0.0.1:5001`. Start only one Flask instance; if it is already running, reuse it. To reload configuration, press Ctrl+C in its terminal before starting it again. It initializes the SQLite database and seeds the pre-existing superuser Admin and demo treks.*
 
 ### 2. Launch Celery Worker & Beat Scheduler
 Open two separate terminal windows for background batch jobs:
@@ -221,14 +253,18 @@ Open two separate terminal windows for background batch jobs:
 ```bash
 cd backend
 source .venv/bin/activate
-celery -A tasks.celery_app.celery_app worker --loglevel=info
+source .env
+export PYTHONPATH="$(pwd)"
+python -m celery -A tasks.celery_app.celery_app worker --pool=solo --concurrency=1 --loglevel=info
 ```
 
 **Terminal 3 (Celery Beat Periodic Scheduler):**
 ```bash
 cd backend
 source .venv/bin/activate
-celery -A tasks.celery_app.celery_app beat --loglevel=info
+source .env
+export PYTHONPATH="$(pwd)"
+python -m celery -A tasks.celery_app.celery_app beat --loglevel=info --schedule=/tmp/tma-demo-celerybeat-schedule
 ```
 
 ### 3. Frontend Development (Optional)

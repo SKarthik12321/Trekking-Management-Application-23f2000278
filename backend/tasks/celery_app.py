@@ -4,10 +4,13 @@ Handles scheduled daily reminders, monthly activity reports, and async CSV expor
 """
 import os
 import csv
+import html
+import smtplib
 from datetime import datetime, timedelta
 from celery import Celery
 from celery.schedules import crontab
 from config import Config
+from utils.email_service import send_email
 
 # Initialize Celery
 celery_app = Celery(
@@ -39,7 +42,11 @@ celery_app.conf.update(
 )
 
 def get_flask_app():
-    """Helper to lazily create and provide Flask application context inside Celery workers."""
+    """
+    Lazily imports and creates the Flask app inside each Celery task.
+    Can't import at module level here — Celery workers start without a Flask context,
+    so we defer the app creation until the task actually runs.
+    """
     from app import create_app
     return create_app()
 
@@ -48,7 +55,7 @@ def send_daily_reminders():
     """
     Scheduled Job (a): Daily Reminders.
     Finds upcoming treks within the next 3 days and sends instructions/reminders to registered users.
-    Simulates email / SMS / Google Chat webhook dispatch and records in Notification table.
+    Records in-app notifications and sends email when SMTP is enabled.
     """
     app = get_flask_app()
     with app.app_context():
@@ -66,6 +73,7 @@ def send_daily_reminders():
 
         reminders_sent = 0
         logs = []
+        email_messages = []
 
         for trek in upcoming_treks:
             active_bookings = Booking.query.filter_by(trek_id=trek.id, status='Booked').all()
@@ -89,8 +97,12 @@ def send_daily_reminders():
                     )
                     db.session.add(notif)
                     reminders_sent += 1
-
-                    # Log simulated email / SMS / Webhook dispatch
+                    email_messages.append({
+                        'user_id': user.id,
+                        'email': user.email,
+                        'subject': f"Reminder: {trek.name} starts in {days_left} day(s)",
+                        'message': msg
+                    })
                     logs.append({
                         'user_id': user.id,
                         'email': user.email,
@@ -99,8 +111,37 @@ def send_daily_reminders():
                     })
 
         db.session.commit()
-        print(f"[CELERY REMINDER] Sent {reminders_sent} reminder notifications.")
-        return {'status': 'SUCCESS', 'reminders_sent': reminders_sent, 'logs': logs}
+        emails_sent = 0
+        email_failures = 0
+        if app.config.get('SMTP_ENABLED'):
+            for item in email_messages:
+                try:
+                    send_email(
+                        item['email'],
+                        item['subject'],
+                        item['message'],
+                        f"<p>{html.escape(item['message'])}</p>"
+                    )
+                    emails_sent += 1
+                except (OSError, smtplib.SMTPException, ValueError):
+                    app.logger.exception(
+                        'Failed to send a trek reminder email to user id %s.',
+                        item['user_id']
+                    )
+                    email_failures += 1
+
+        print(
+            f"[CELERY REMINDER] Created {reminders_sent} in-app reminders; "
+            f"emails sent: {emails_sent}, email failures: {email_failures}."
+        )
+        return {
+            'status': 'SUCCESS',
+            'reminders_sent': reminders_sent,
+            'emails_sent': emails_sent,
+            'email_failures': email_failures,
+            'email_status': 'disabled' if not app.config.get('SMTP_ENABLED') else 'enabled',
+            'logs': logs
+        }
 
 @celery_app.task(name='tasks.celery_app.generate_monthly_report')
 def generate_monthly_report():
@@ -163,8 +204,9 @@ def generate_monthly_report():
         # Generate HTML file
         html_filename = f"monthly_report_{timestamp_str}.html"
         html_path = os.path.join(Config.REPORTS_DIR, html_filename)
+        html_report = generate_monthly_html(report_data)
         with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(generate_monthly_html(report_data))
+            f.write(html_report)
 
         # Notify all Admin users
         admins = User.query.filter_by(role='admin').all()
@@ -179,11 +221,38 @@ def generate_monthly_report():
             db.session.add(notif)
         db.session.commit()
 
+        emails_sent = 0
+        email_failures = 0
+        if app.config.get('SMTP_ENABLED'):
+            for admin in admins:
+                try:
+                    send_email(
+                        admin.email,
+                        f"Monthly Activity Report - {month_str}",
+                        (
+                            f"Monthly report for {month_str} is ready. "
+                            f"Completed treks: {completed_treks}; "
+                            f"participants: {total_participants}; "
+                            f"revenue: INR {total_revenue:,.2f}."
+                        ),
+                        html_report
+                    )
+                    emails_sent += 1
+                except (OSError, smtplib.SMTPException, ValueError):
+                    app.logger.exception(
+                        'Failed to send the monthly report email to admin user id %s.',
+                        admin.id
+                    )
+                    email_failures += 1
+
         print(f"[CELERY REPORT] Monthly report created: {pdf_filename}")
         return {
             'status': 'SUCCESS',
             'pdf_file': pdf_filename,
             'html_file': html_filename,
+            'emails_sent': emails_sent,
+            'email_failures': email_failures,
+            'email_status': 'disabled' if not app.config.get('SMTP_ENABLED') else 'enabled',
             'report_data': report_data
         }
 

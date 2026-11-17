@@ -17,6 +17,7 @@ from models.trek import Trek
 from models.booking import Booking
 from utils.auth import roles_required
 from utils.cache import delete_cache_pattern
+from utils.validation import normalize_phone_number
 from tasks.celery_app import generate_monthly_report
 from config import Config
 
@@ -150,11 +151,11 @@ def add_trek_staff():
     Staff cannot register themselves; they are created programmatically by Admin.
     """
     data = request.get_json() or {}
-    username = (data.get('username') or '').strip()
+    username = (data.get('username') or '').strip().lower()
     email = (data.get('email') or '').strip().lower()
     password = data.get('password') or 'Staff@123'
     name = (data.get('name') or '').strip()
-    contact_number = (data.get('contact_number') or '').strip()
+    contact_number = normalize_phone_number(data.get('contact_number'))
     qualifications = data.get('qualifications', 'Certified Mountain Guide')
     experience_years = int(data.get('experience_years', 2))
     emergency_contact = data.get('emergency_contact', '')
@@ -162,10 +163,15 @@ def add_trek_staff():
     if not username or not email or not name:
         return jsonify({'error': 'Username, email, and staff name are required.'}), 400
 
-    if User.query.filter_by(username=username).first():
+    if contact_number is None:
+        return jsonify({'error': 'Contact number must contain exactly 10 digits, optionally prefixed with +91.'}), 400
+    if not contact_number:
+        return jsonify({'error': 'Contact number is required.'}), 400
+
+    if User.query.filter(db.func.lower(User.username) == username).first():
         return jsonify({'error': f"Username '{username}' already exists."}), 409
 
-    if User.query.filter_by(email=email).first():
+    if User.query.filter(db.func.lower(User.email) == email).first():
         return jsonify({'error': f"Email '{email}' already registered."}), 409
 
     # Create Staff User

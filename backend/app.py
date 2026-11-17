@@ -7,6 +7,7 @@ Main Flask Application Entrypoint.
 Initializes configuration, database, CORS, route blueprints, and static single-page app serving.
 """
 import os
+import socket
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 from config import Config
@@ -92,14 +93,22 @@ def create_app(config_class=Config):
     return app
 
 if __name__ == '__main__':
+    port = 5001
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as port_probe:
+        if port_probe.connect_ex(('127.0.0.1', port)) == 0:
+            print(
+                f"Port {port} is already in use. Reuse the running app at "
+                f"http://127.0.0.1:{port}/, or press Ctrl+C in its terminal before restarting."
+            )
+            raise SystemExit(1)
+
     application = create_app()
     # Programmatic database and admin creation
     seed_database(application)
-    port = int(os.environ.get('PORT', 5001))
     print(f"\n=======================================================")
     print(f"  Trekking Management Application - V2 (MAD-II)")
     print(f"  Student Roll No: 23f2000278")
     print(f"  API Server running on: http://127.0.0.1:{port}")
     print(f"  Pre-configured Superuser Admin: admin@gmail.com / admin123")
     print(f"=======================================================\n")
-    application.run(host='0.0.0.0', port=port, debug=True)
+    application.run(host='0.0.0.0', port=port, debug=True, use_reloader=False)

@@ -3,11 +3,13 @@ PDF and HTML Monthly Activity Report Generator for Admin.
 Utilizes ReportLab to generate professional PDF documents for trekking activity.
 """
 import os
+from io import BytesIO
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from xml.sax.saxutils import escape
 
 def generate_monthly_pdf(report_data: dict, output_filepath: str) -> str:
     """Generate a high quality PDF report for trekking administration."""
@@ -171,3 +173,161 @@ def generate_monthly_html(report_data: dict) -> str:
     </body>
     </html>
     """
+
+
+def generate_booking_receipt_pdf(booking_data: dict) -> bytes:
+    """Build a compact PDF receipt for a trek booking without writing it to disk."""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=46,
+        leftMargin=46,
+        topMargin=42,
+        bottomMargin=42,
+        title=f"TrekFlow Booking Receipt #{booking_data['booking_id']}",
+        author='TrekFlow'
+    )
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'BookingReceiptTitle',
+        parent=styles['Title'],
+        textColor=colors.white,
+        fontSize=20,
+        leading=25,
+        alignment=0
+    )
+    brand_style = ParagraphStyle(
+        'BookingReceiptBrand',
+        parent=styles['Normal'],
+        textColor=colors.HexColor('#d8f3e5'),
+        fontSize=9,
+        leading=12
+    )
+    label_style = ParagraphStyle(
+        'BookingReceiptLabel',
+        parent=styles['Normal'],
+        textColor=colors.HexColor('#53665c'),
+        fontSize=9,
+        leading=13
+    )
+    value_style = ParagraphStyle(
+        'BookingReceiptValue',
+        parent=styles['Normal'],
+        textColor=colors.HexColor('#20312b'),
+        fontSize=9,
+        leading=13
+    )
+    heading_style = ParagraphStyle(
+        'BookingReceiptHeading',
+        parent=styles['Heading2'],
+        textColor=colors.HexColor('#174b3a'),
+        fontSize=13,
+        leading=17,
+        spaceAfter=8
+    )
+    note_style = ParagraphStyle(
+        'BookingReceiptNote',
+        parent=styles['Normal'],
+        textColor=colors.HexColor('#6b582c'),
+        fontSize=8,
+        leading=12
+    )
+
+    story = [
+        Table(
+            [[
+                Paragraph('TREKFLOW', brand_style),
+                Paragraph('BOOKING CONFIRMED', title_style)
+            ]],
+            colWidths=[120, 400],
+            style=TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#174b3a')),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 16),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 16),
+                ('TOPPADDING', (0, 0), (-1, -1), 18),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 18),
+            ])
+        ),
+        Spacer(1, 20),
+        Paragraph(f"Hello {escape(str(booking_data['user_name']))},", styles['BodyText']),
+        Paragraph(
+            f"Your place on <b>{escape(str(booking_data['trek_name']))}</b> is reserved.",
+            styles['BodyText']
+        ),
+        Spacer(1, 12),
+        Paragraph('Booking details', heading_style)
+    ]
+
+    rows = (
+        ('Booking ID', booking_data['booking_id']),
+        ('Booking date', booking_data['booking_date']),
+        ('Transaction ID', booking_data['transaction_id']),
+        ('Trek location', booking_data['location']),
+        ('Difficulty', booking_data['difficulty']),
+        ('Trek dates', f"{booking_data['start_date']} to {booking_data['end_date']}"),
+        ('Seats', booking_data['num_seats']),
+        ('Participants', booking_data['participant_names']),
+        ('Payment method', booking_data['payment_method']),
+        ('Payment status', f"{booking_data['payment_status']} (demo)"),
+    )
+    details_table = Table(
+        [
+            [
+                Paragraph(escape(str(label)), label_style),
+                Paragraph(escape(str(value if value not in (None, '') else 'N/A')), value_style)
+            ]
+            for label, value in rows
+        ],
+        colWidths=[145, 375]
+    )
+    details_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f2f7f4')),
+        ('ROWBACKGROUNDS', (1, 0), (1, -1), [colors.white, colors.HexColor('#fbfcfb')]),
+        ('GRID', (0, 0), (-1, -1), 0.4, colors.HexColor('#dce7e0')),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    story.extend([
+        details_table,
+        Spacer(1, 14),
+        Table(
+            [[
+                Paragraph('<b>TOTAL (DEMO PAYMENT)</b>', label_style),
+                Paragraph(
+                    f"<b>INR {booking_data['total_amount']:,.2f}</b>",
+                    ParagraphStyle(
+                        'BookingReceiptAmount',
+                        parent=value_style,
+                        textColor=colors.HexColor('#174b3a'),
+                        fontSize=15,
+                        alignment=2
+                    )
+                )
+            ]],
+            colWidths=[260, 260],
+            style=TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#edf7f0')),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 12),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ])
+        ),
+        Spacer(1, 18),
+        Paragraph(
+            '<b>Demo payment notice:</b> Payment is simulated for this project. '
+            'No real payment was processed or charged.',
+            note_style
+        ),
+        Spacer(1, 8),
+        Paragraph('Thank you for trekking with TrekFlow.', label_style)
+    ])
+
+    doc.build(story)
+    return buffer.getvalue()

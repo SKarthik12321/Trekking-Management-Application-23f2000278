@@ -215,7 +215,15 @@ const submitBooking = async () => {
       participant_names: participantNames.value,
     };
     const res = await api.post('/bookings', payload);
-    notify(`Booking confirmed for ${props.trek.name}! Your slots have been reserved.`, 'success');
+    const emailNotice = {
+      sent: ' A confirmation email with your PDF receipt was sent.',
+      disabled: ' Email sending is disabled; no email was sent.',
+      failed: ' Your booking was saved, but the confirmation email could not be sent.',
+    }[res.data.email_status] || '';
+    notify(
+      `Booking confirmed for ${props.trek.name}! Your slots have been reserved.${emailNotice}`,
+      res.data.email_status === 'failed' ? 'warning' : 'success',
+    );
     emit('booked', res.data.booking);
     closeModal();
   } catch (err) {

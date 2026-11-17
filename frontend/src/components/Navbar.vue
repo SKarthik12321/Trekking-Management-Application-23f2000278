@@ -100,7 +100,7 @@
         <ul class="navbar-nav align-items-lg-center">
           <!-- Install PWA Button if available -->
           <li v-if="installPromptAvailable" class="nav-item me-2">
-            <button class="btn btn-sm btn-trek-ghost" @click="installPwa">
+            <button class="btn btn-sm btn-indigo-ghost" @click="installPwa">
               <i class="bi bi-download me-1"></i> Install App
             </button>
           </li>
@@ -153,9 +153,9 @@
                 </div>
                 <div class="text-muted mt-1" style="font-size: 0.8rem;">{{ item.message }}</div>
                 <div v-if="item.download_url" class="mt-2">
-                  <a :href="item.download_url" class="btn btn-xs btn-primary text-white py-0 px-2" style="font-size: 0.75rem;" target="_blank">
+                  <button type="button" class="btn btn-xs btn-primary text-white py-0 px-2" style="font-size: 0.75rem;" @click="downloadNotification(item)">
                     <i class="bi bi-download me-1"></i> Download File
-                  </a>
+                  </button>
                 </div>
               </li>
             </ul>
@@ -230,7 +230,8 @@ import {
   logout,
   fetchNotifications,
   markNotificationAsRead,
-  notify
+  notify,
+  downloadAuthenticatedFile
 } from '@/store/auth';
 
 const router = useRouter();
@@ -253,6 +254,15 @@ const userInitial = computed(() => {
 
 const loadNotifications = () => {
   fetchNotifications();
+};
+
+const downloadNotification = async (item) => {
+  try {
+    await downloadAuthenticatedFile(item.download_url);
+  } catch (err) {
+    console.error('Failed to download notification attachment:', err);
+    notify('Failed to download file. Please try again.', 'danger');
+  }
 };
 
 const handleLogout = () => {

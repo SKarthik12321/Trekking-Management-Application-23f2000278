@@ -28,6 +28,17 @@ class Config:
     CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/1"
     CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/2"
 
+    # Optional SMTP transport (MailHog defaults; activate with SMTP_ENABLED=true)
+    SMTP_ENABLED = os.environ.get('SMTP_ENABLED', 'false').lower() in {'1', 'true', 'yes'}
+    SMTP_HOST = os.environ.get('SMTP_HOST', '127.0.0.1')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 1025))
+    SMTP_USERNAME = os.environ.get('SMTP_USERNAME') or None
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD') or None
+    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'false').lower() in {'1', 'true', 'yes'}
+    SMTP_FROM_EMAIL = os.environ.get('SMTP_FROM_EMAIL', 'no-reply@trekflow.local')
+    SMTP_FROM_NAME = os.environ.get('SMTP_FROM_NAME', 'TrekFlow')
+    SMTP_TIMEOUT_SECONDS = int(os.environ.get('SMTP_TIMEOUT_SECONDS', 10))
+
     # Export & Report Output Directories
     EXPORTS_DIR = os.path.join(BASE_DIR, 'exports')
     REPORTS_DIR = os.path.join(BASE_DIR, 'reports')

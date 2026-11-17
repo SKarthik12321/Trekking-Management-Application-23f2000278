@@ -34,7 +34,8 @@ def seed_database(app):
         else:
             print("[INIT_DB] Superuser Admin already exists.")
 
-        # Seed Staff Members if not present
+        # --- Seed Staff ---
+        # only seed if no staff exist — avoids duplicates on subsequent startups
         if User.query.filter_by(role='staff').count() == 0:
             print("[INIT_DB] Seeding staff members...")
             staff_data = [

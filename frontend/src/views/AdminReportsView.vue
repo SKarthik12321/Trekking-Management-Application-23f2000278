@@ -85,14 +85,15 @@
                 <td class="text-muted">{{ r.size_kb }} KB</td>
                 <td class="small text-muted">{{ formatDate(r.created_at) }}</td>
                 <td class="pe-3 text-end">
-                  <a
-                    :href="r.download_url"
+                  <button
+                    type="button"
                     class="btn btn-sm btn-outline-success fw-semibold"
-                    target="_blank"
-                    download
+                    :disabled="downloadingFilename === r.filename"
+                    @click="downloadReport(r)"
                   >
-                    <i class="bi bi-download me-1"></i> Download {{ r.type }}
-                  </a>
+                    <i class="bi bi-download me-1"></i>
+                    {{ downloadingFilename === r.filename ? 'Downloading...' : `Download ${r.type}` }}
+                  </button>
                 </td>
               </tr>
             </tbody>
@@ -105,14 +106,16 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { api } from '@/store/auth';
+import { api, downloadAuthenticatedFile } from '@/store/auth';
 
 const reports = ref([]);
 const loading = ref(false);
-const generating = ref(false);
+const generating = ref(false); // tracks the trigger button state separately from the table loader
+const downloadingFilename = ref('');
 const alertMessage = ref('');
 const alertType = ref('success');
 
+// fetch the list of already-generated report files from the backend reports/ directory
 const fetchReports = async () => {
   loading.value = true;
   try {
@@ -125,6 +128,7 @@ const fetchReports = async () => {
   }
 };
 
+// on-demand trigger for the monthly batch job — normally runs on Celery Beat schedule (1st of month)
 const triggerMonthlyReport = async () => {
   generating.value = true;
   alertMessage.value = '';
@@ -132,7 +136,7 @@ const triggerMonthlyReport = async () => {
     const res = await api.post('/admin/reports/monthly');
     alertMessage.value = res.data.message || 'Report generated successfully!';
     alertType.value = 'success';
-    // Refresh list after brief moment
+    // give the backend a moment to write the file before refreshing the archive list
     setTimeout(() => {
       fetchReports();
     }, 1500);
@@ -145,6 +149,20 @@ const triggerMonthlyReport = async () => {
   }
 };
 
+const downloadReport = async (report) => {
+  downloadingFilename.value = report.filename;
+  try {
+    await downloadAuthenticatedFile(report.download_url, report.filename);
+  } catch (err) {
+    console.error('Failed to download report:', err);
+    alertMessage.value = 'Failed to download report. Please try again.';
+    alertType.value = 'danger';
+  } finally {
+    downloadingFilename.value = '';
+  }
+};
+
+// format report timestamps for the archive table
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleString('en-IN', {

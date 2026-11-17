@@ -146,7 +146,15 @@
               <div class="row g-2 mb-3">
                 <div class="col-6">
                   <label class="form-label fw-semibold small">Contact Phone</label>
-                  <input type="tel" class="form-control" v-model="newStaff.contact_number" required />
+                  <input
+                    type="tel"
+                    class="form-control"
+                    v-model="newStaff.contact_number"
+                    pattern="(?:\+91[\s-]?)?[0-9]{10}"
+                    title="Enter exactly 10 digits, optionally prefixed with +91."
+                    autocomplete="tel"
+                    required
+                  />
                 </div>
                 <div class="col-6">
                   <label class="form-label fw-semibold small">Experience (Years)</label>

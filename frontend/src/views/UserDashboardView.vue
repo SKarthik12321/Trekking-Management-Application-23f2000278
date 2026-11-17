@@ -116,7 +116,7 @@
             </div>
             <div>
               <div class="text-muted small" style="font-size: 0.75rem;">Contact Number</div>
-              <div class="fw-semibold text-dark">{{ currentUser?.contact_number || '+91 99887 76655' }}</div>
+              <div class="fw-semibold text-dark">{{ currentUser?.contact_number || 'Not provided' }}</div>
             </div>
           </div>
 
@@ -176,8 +176,9 @@ const availableTreks = ref([]);
 const loading = ref(false);
 
 const bookingModalOpen = ref(false);
-const selectedTrek = ref(null);
+const selectedTrek = ref(null); // trek passed to BookingModal when user clicks "Book"
 
+// derive the avatar initial from the user's name for the profile pill
 const userInitial = computed(() => {
   if (currentUser.value && currentUser.value.name) {
     return currentUser.value.name.charAt(0).toUpperCase();
@@ -185,6 +186,7 @@ const userInitial = computed(() => {
   return 'U';
 });
 
+// fetch bookings and open treks in parallel to keep the page load fast
 const fetchData = async () => {
   loading.value = true;
   try {
@@ -193,6 +195,7 @@ const fetchData = async () => {
       api.get('/treks'),
     ]);
     myBookings.value = bRes.data;
+    // only show open treks on the dashboard — pending/closed/completed are excluded here
     availableTreks.value = tRes.data.filter((t) => t.status === 'Open');
   } catch (err) {
     console.error('Failed to load user dashboard:', err);
@@ -201,6 +204,7 @@ const fetchData = async () => {
   }
 };
 
+// only 'Booked' status counts as active — completed/cancelled go to history
 const upcomingBookings = computed(() => {
   return myBookings.value.filter((b) => b.status === 'Booked');
 });
@@ -214,6 +218,7 @@ const viewDetails = (trek) => {
   router.push('/treks');
 };
 
+// after a successful booking, refresh the data and navigate to the bookings history page
 const onBooked = () => {
   fetchData();
   router.push('/my-bookings');

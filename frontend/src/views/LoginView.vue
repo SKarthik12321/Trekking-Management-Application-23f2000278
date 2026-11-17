@@ -90,11 +90,11 @@ import { useRouter, useRoute } from 'vue-router';
 import { api, setAuth, notify } from '@/store/auth';
 
 const router = useRouter();
-const route = useRoute();
+const route = useRoute(); // used to read the ?redirect= query param set by the router guard
 
 const email = ref('');
 const password = ref('');
-const showPassword = ref(false);
+const showPassword = ref(false); // toggles input type between password and text
 const loading = ref(false);
 const errorMessage = ref('');
 
@@ -109,15 +109,17 @@ const handleLogin = async () => {
     });
 
     const { token, user } = res.data;
-    setAuth(token, user);
+    setAuth(token, user); // persist token and user to localStorage via auth store
     notify(`Login successful! Welcome back, ${user.name}!`, 'success');
 
+    // if the user was redirected here from a protected page, send them back there
     const redirectPath = route.query.redirect;
     if (redirectPath) {
       router.push(redirectPath);
       return;
     }
 
+    // otherwise send to their role-specific dashboard
     if (user.role === 'admin') {
       router.push('/admin');
     } else if (user.role === 'staff') {

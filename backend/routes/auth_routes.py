@@ -2,11 +2,15 @@
 Authentication and Profile management routes.
 Handles registration for Trekkers, login for all roles, and profile updates.
 """
-from flask import Blueprint, request, jsonify, g
+import smtplib
+from flask import Blueprint, request, jsonify, g, current_app
 from database import db
 from models.user import User
 from models.notification import Notification
 from utils.auth import generate_jwt_token, jwt_required
+from utils.email_service import send_email
+from utils.email_templates import build_welcome_email
+from utils.validation import normalize_phone_number
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
@@ -17,15 +21,18 @@ def register():
     Admin and Trek Staff registration is strictly prohibited here.
     """
     data = request.get_json() or {}
-    username = (data.get('username') or '').strip()
+    username = (data.get('username') or '').strip().lower()
     email = (data.get('email') or '').strip().lower()
     password = data.get('password') or ''
     name = (data.get('name') or '').strip()
-    contact_number = (data.get('contact_number') or '').strip()
+    contact_number = normalize_phone_number(data.get('contact_number'))
 
     # Backend Validation
     if not username or not email or not password or not name:
         return jsonify({'error': 'Username, email, password, and name are required fields'}), 400
+
+    if contact_number is None:
+        return jsonify({'error': 'Contact number must contain exactly 10 digits, optionally prefixed with +91.'}), 400
 
     if len(password) < 6:
         return jsonify({'error': 'Password must be at least 6 characters long'}), 400
@@ -33,10 +40,10 @@ def register():
     if '@' not in email or '.' not in email:
         return jsonify({'error': 'Please provide a valid email address'}), 400
 
-    if User.query.filter_by(username=username).first():
+    if User.query.filter(db.func.lower(User.username) == username).first():
         return jsonify({'error': f"Username '{username}' is already taken. Please choose another."}), 409
 
-    if User.query.filter_by(email=email).first():
+    if User.query.filter(db.func.lower(User.email) == email).first():
         return jsonify({'error': f"Email '{email}' is already registered."}), 409
 
     # Create new user with role 'user' (Trekker)
@@ -64,9 +71,25 @@ def register():
     db.session.add(welcome_notif)
     db.session.commit()
 
+    email_status = 'disabled'
+    if current_app.config.get('SMTP_ENABLED'):
+        try:
+            subject, text_body, html_body = build_welcome_email(name, username)
+            send_email(
+                new_user.email,
+                subject,
+                text_body,
+                html_body
+            )
+            email_status = 'sent'
+        except (OSError, smtplib.SMTPException, ValueError):
+            current_app.logger.exception('Failed to send the trekker welcome email.')
+            email_status = 'failed'
+
     token = generate_jwt_token(new_user)
     return jsonify({
         'message': 'Registration successful! Welcome to Trekking Management App.',
+        'email_status': email_status,
         'token': token,
         'user': new_user.to_dict()
     }), 201
@@ -86,7 +109,8 @@ def login():
 
     # Find user by username or email
     user = User.query.filter(
-        (User.username == identifier) | (User.email == identifier.lower())
+        (db.func.lower(User.username) == identifier.lower()) |
+        (db.func.lower(User.email) == identifier.lower())
     ).first()
 
     # Fallback alias for admin
@@ -132,11 +156,14 @@ def update_profile():
     data = request.get_json() or {}
     user = g.current_user
 
+    if 'contact_number' in data:
+        contact_number = normalize_phone_number(data['contact_number'])
+        if contact_number is None:
+            return jsonify({'error': 'Contact number must contain exactly 10 digits, optionally prefixed with +91.'}), 400
+        user.contact_number = contact_number
+
     if 'name' in data and data['name'].strip():
         user.name = data['name'].strip()
-
-    if 'contact_number' in data:
-        user.contact_number = data['contact_number'].strip()
 
     if 'password' in data and data['password']:
         if len(data['password']) < 6:

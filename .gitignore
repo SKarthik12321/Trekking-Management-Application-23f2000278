@@ -29,7 +29,7 @@ Thumbs.db
 *.swo
 
 # Celery
-celerybeat-schedule
+celerybeat-schedule*
 celerybeat.pid
 
 # Intermediate Exports and Reports (keep sample or dir)
@@ -39,3 +39,4 @@ backend/reports/*.html
 !backend/exports/.gitkeep
 !backend/reports/.gitkeep
 backend/trekking.db
+/backend/.env

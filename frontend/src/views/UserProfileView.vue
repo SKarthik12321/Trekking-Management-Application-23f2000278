@@ -65,7 +65,14 @@
 
                 <div class="col-md-6">
                   <label class="form-label small fw-semibold">Contact Number</label>
-                  <input type="tel" class="form-control" v-model="form.contact_number" />
+                  <input
+                    type="tel"
+                    class="form-control"
+                    v-model="form.contact_number"
+                    pattern="(?:\+91[\s-]?)?[0-9]{10}"
+                    title="Enter exactly 10 digits, optionally prefixed with +91."
+                    autocomplete="tel"
+                  />
                 </div>
 
                 <!-- If Staff, qualifications -->
@@ -142,17 +149,20 @@ const passwordSaving = ref(false);
 const alertMessage = ref('');
 const alertType = ref('success');
 
+// separate reactive objects for profile and password forms
+// avoids accidentally clearing the password fields when saving profile details
 const form = reactive({
   name: '',
   contact_number: '',
-  qualifications: '',
+  qualifications: '', // only relevant for staff; ignored by the backend for user role
 });
 
 const passwordForm = reactive({
   password: '',
-  confirmPassword: '',
+  confirmPassword: '', // client-side only — not sent to backend
 });
 
+// derive the avatar initial from the current user's name
 const userInitial = computed(() => {
   if (currentUser.value && currentUser.value.name) {
     return currentUser.value.name.charAt(0).toUpperCase();
@@ -160,6 +170,7 @@ const userInitial = computed(() => {
   return 'U';
 });
 
+// pre-fill the form with existing values when the component loads
 onMounted(() => {
   if (currentUser.value) {
     form.name = currentUser.value.name;
@@ -174,7 +185,7 @@ const updateProfile = async () => {
   saving.value = true;
   try {
     await api.put('/auth/profile', form);
-    await fetchCurrentUser();
+    await fetchCurrentUser(); // pull updated user back into reactive state and localStorage
     alertMessage.value = 'Profile updated successfully!';
     alertType.value = 'success';
     notify('Profile updated successfully!', 'success');
@@ -197,6 +208,7 @@ const updatePassword = async () => {
   passwordSaving.value = true;
   try {
     await api.put('/auth/profile', { password: passwordForm.password });
+    // clear the fields after a successful change so they don't sit in the DOM
     passwordForm.password = '';
     passwordForm.confirmPassword = '';
     alertMessage.value = 'Password updated successfully!';

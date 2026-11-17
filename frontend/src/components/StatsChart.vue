@@ -28,6 +28,8 @@ import {
   Legend,
 } from 'chart.js';
 
+// tree-shakeable Chart.js — only register the chart types we actually use
+// (bar for participation stats, doughnut for trek difficulty breakdown)
 Chart.register(
   BarController,
   BarElement,
@@ -56,11 +58,12 @@ const props = defineProps({
 });
 
 const chartCanvas = ref(null);
-let chartInstance = null;
+let chartInstance = null; // kept outside reactive state to avoid Vue wrapping the Chart object
 
 const renderChart = () => {
   if (!chartCanvas.value) return;
 
+  // destroy existing instance before re-drawing — Chart.js throws if you create two on the same canvas
   if (chartInstance) {
     chartInstance.destroy();
   }
@@ -70,7 +73,7 @@ const renderChart = () => {
     data: props.chartData,
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: false, // height controlled by the parent container div
       plugins: {
         legend: {
           position: props.type === 'doughnut' ? 'bottom' : 'top',
@@ -87,12 +90,13 @@ const renderChart = () => {
           cornerRadius: 6,
         },
       },
+      // only bar charts need axis scales; doughnut has no x/y axes
       scales:
         props.type === 'bar'
           ? {
               y: {
                 beginAtZero: true,
-                ticks: { precision: 0, font: { size: 10 } },
+                ticks: { precision: 0, font: { size: 10 } }, // integers only — no decimal participant counts
                 grid: { color: 'rgba(0,0,0,0.05)' },
               },
               x: {
@@ -113,6 +117,7 @@ onMounted(() => {
   renderChart();
 });
 
+// re-render whenever the parent passes updated chart data (e.g. after an API response arrives)
 watch(
   () => props.chartData,
   () => {
@@ -121,6 +126,7 @@ watch(
   { deep: true }
 );
 
+// cleanup on unmount to prevent memory leaks when navigating away
 onBeforeUnmount(() => {
   if (chartInstance) {
     chartInstance.destroy();

@@ -9,8 +9,9 @@ Enforces business rules:
 """
 import uuid
 import os
+import smtplib
 from datetime import datetime
-from flask import Blueprint, request, jsonify, g, send_from_directory
+from flask import Blueprint, request, jsonify, g, send_from_directory, current_app
 from database import db
 from models.trek import Trek
 from models.booking import Booking
@@ -19,6 +20,10 @@ from utils.auth import jwt_required, roles_required
 from utils.cache import delete_cache_pattern
 from tasks.celery_app import export_booking_history_csv
 from config import Config
+from reportlab.platypus.doctemplate import LayoutError
+from utils.email_service import send_email
+from utils.email_templates import build_booking_confirmation_email
+from utils.pdf_generator import generate_booking_receipt_pdf
 
 booking_bp = Blueprint('bookings', __name__, url_prefix='/api/bookings')
 
@@ -109,8 +114,50 @@ def create_booking():
     # Invalidate Redis cache
     delete_cache_pattern('treks:*')
 
+    email_status = 'disabled'
+    if current_app.config.get('SMTP_ENABLED'):
+        booking_details = {
+            'booking_id': booking.id,
+            'user_name': user.name,
+            'trek_name': trek.name,
+            'location': trek.location,
+            'difficulty': trek.difficulty,
+            'start_date': trek.start_date.isoformat() if trek.start_date else 'N/A',
+            'end_date': trek.end_date.isoformat() if trek.end_date else 'N/A',
+            'booking_date': booking.booking_date.strftime('%Y-%m-%d %H:%M UTC'),
+            'num_seats': booking.num_seats,
+            'participant_names': booking.participant_names or user.name,
+            'payment_method': booking.payment_method or 'N/A',
+            'payment_status': booking.payment_status,
+            'transaction_id': booking.transaction_id or 'N/A',
+            'total_amount': booking.total_amount
+        }
+        try:
+            subject, text_body, html_body = build_booking_confirmation_email(booking_details)
+            receipt_pdf = generate_booking_receipt_pdf(booking_details)
+            send_email(
+                user.email,
+                subject,
+                text_body,
+                html_body,
+                attachments=[(
+                    f'TrekFlow_Booking_{booking.id}.pdf',
+                    receipt_pdf,
+                    'application',
+                    'pdf'
+                )]
+            )
+            email_status = 'sent'
+        except (OSError, smtplib.SMTPException, ValueError, LayoutError):
+            current_app.logger.exception(
+                'Booking %s was saved, but its confirmation email could not be sent.',
+                booking.id
+            )
+            email_status = 'failed'
+
     return jsonify({
         'message': 'Trek booked successfully!',
+        'email_status': email_status,
         'booking': booking.to_dict()
     }), 201
 

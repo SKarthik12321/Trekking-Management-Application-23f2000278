@@ -29,9 +29,9 @@
           {{ alertMessage }}
         </div>
         <div v-if="downloadLink" class="ms-3">
-          <a :href="downloadLink" class="btn btn-xs btn-success text-white py-0 px-2" target="_blank" download>
+          <button type="button" class="btn btn-xs btn-success text-white py-0 px-2" @click="downloadExport">
             <i class="bi bi-download me-1"></i> Download File
-          </a>
+          </button>
         </div>
       </div>
       <button type="button" class="btn-close" @click="alertMessage = ''"></button>
@@ -125,7 +125,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { api, notify } from '@/store/auth';
+import { api, notify, downloadAuthenticatedFile } from '@/store/auth';
 
 const bookings = ref([]);
 const loading = ref(false);
@@ -180,6 +180,16 @@ const exportHistoryCsv = async () => {
     alertType.value = 'danger';
   } finally {
     exporting.value = false;
+  }
+};
+
+const downloadExport = async () => {
+  try {
+    await downloadAuthenticatedFile(downloadLink.value);
+  } catch (err) {
+    console.error('Failed to download booking export:', err);
+    alertMessage.value = 'Failed to download export. Please try again.';
+    alertType.value = 'danger';
   }
 };
 

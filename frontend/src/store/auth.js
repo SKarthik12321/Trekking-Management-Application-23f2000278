@@ -1,7 +1,7 @@
 import { reactive, computed } from 'vue';
 import axios from 'axios';
 
-// Base API instance
+// base axios instance — all API calls go through this so the base URL and headers stay consistent
 export const api = axios.create({
   baseURL: '/api',
   headers: {
@@ -9,10 +9,11 @@ export const api = axios.create({
   },
 });
 
-// Load saved credentials from localStorage
+// restore session from localStorage so the user stays logged in after a page refresh
 const savedToken = localStorage.getItem('tma_token') || null;
 const savedUser = localStorage.getItem('tma_user') ? JSON.parse(localStorage.getItem('tma_user')) : null;
 
+// reactive central auth state — components import these instead of reading localStorage directly
 export const authState = reactive({
   token: savedToken,
   user: savedUser,
@@ -20,11 +21,12 @@ export const authState = reactive({
   unreadCount: 0,
 });
 
-// Global toast alert state
+// shared toast queue — ToastAlert.vue reads this to render slide-in banners
 export const toastState = reactive({
   toasts: [],
 });
 
+// push a new toast and auto-remove it after the given duration
 export function notify(message, variant = 'success', duration = 4000) {
   const id = Date.now() + Math.random();
   toastState.toasts.push({ id, message, variant });
@@ -33,15 +35,17 @@ export function notify(message, variant = 'success', duration = 4000) {
   }, duration);
 }
 
+// manually dismiss a toast before its timeout fires (used by the close button)
 export function dismissToast(id) {
   toastState.toasts = toastState.toasts.filter((t) => t.id !== id);
 }
 
+// computed helpers so components can read auth state without touching authState directly
 export const isAuthenticated = computed(() => !!authState.token);
 export const currentUser = computed(() => authState.user);
 export const userRole = computed(() => (authState.user ? authState.user.role : null));
 
-// Attach auth token to all requests automatically
+// attach the JWT Bearer token to every outgoing request automatically
 api.interceptors.request.use((config) => {
   if (authState.token) {
     config.headers.Authorization = `Bearer ${authState.token}`;
@@ -49,7 +53,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401/403 responses globally
+// if the server returns 401 (token expired) or 403 with a blacklist message, force logout
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -60,6 +64,7 @@ api.interceptors.response.use(
   }
 );
 
+// persist token and user to localStorage so session survives a browser refresh
 export function setAuth(token, user) {
   authState.token = token;
   authState.user = user;
@@ -67,6 +72,7 @@ export function setAuth(token, user) {
   localStorage.setItem('tma_user', JSON.stringify(user));
 }
 
+// clear everything — called on manual logout or when the server rejects the token
 export function logout() {
   authState.token = null;
   authState.user = null;
@@ -76,6 +82,25 @@ export function logout() {
   localStorage.removeItem('tma_user');
 }
 
+export async function downloadAuthenticatedFile(url, filename) {
+  const downloadUrl = new URL(url, window.location.origin);
+  if (downloadUrl.origin !== window.location.origin || !downloadUrl.pathname.startsWith('/api/')) {
+    throw new Error('Download URL must point to this application API.');
+  }
+
+  const apiPath = downloadUrl.pathname.slice('/api'.length);
+  const response = await api.get(apiPath, { responseType: 'blob' });
+  const objectUrl = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = filename || decodeURIComponent(downloadUrl.pathname.split('/').pop() || 'download');
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
+// re-fetch fresh user data from /auth/me and sync it back into reactive state + localStorage
 export async function fetchCurrentUser() {
   if (!authState.token) return null;
   try {
@@ -90,6 +115,7 @@ export async function fetchCurrentUser() {
   }
 }
 
+// pull the latest notifications and recalculate the unread badge count
 export async function fetchNotifications() {
   if (!authState.token) return;
   try {
@@ -101,6 +127,7 @@ export async function fetchNotifications() {
   }
 }
 
+// mark a single notification read both on the server and locally to avoid a full refetch
 export async function markNotificationAsRead(id) {
   try {
     await api.patch(`/auth/notifications/${id}/read`);

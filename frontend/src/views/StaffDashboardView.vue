@@ -129,13 +129,15 @@ const loading = ref(false);
 const alertMessage = ref('');
 const alertType = ref('success');
 
+// fetch treks assigned to the logged-in staff member
 const fetchAssignedTreks = async () => {
   loading.value = true;
   try {
     const res = await api.get('/staff/my-treks');
+    // augment each trek with local editing fields so the input bindings work without mutating the raw API data
     assignedTreks.value = res.data.map((t) => ({
       ...t,
-      newSlots: t.available_slots,
+      newSlots: t.available_slots, // tracks the input field value before submitting
       newStatus: t.status,
     }));
   } catch (err) {
@@ -145,6 +147,7 @@ const fetchAssignedTreks = async () => {
   }
 };
 
+// update available slot count — backend validates that newSlots doesn't exceed total_slots
 const updateSlots = async (trek) => {
   try {
     await api.put(`/staff/treks/${trek.id}/slots`, {
@@ -152,13 +155,14 @@ const updateSlots = async (trek) => {
     });
     alertMessage.value = `Available slots for '${trek.name}' updated to ${trek.newSlots}!`;
     alertType.value = 'success';
-    fetchAssignedTreks();
+    fetchAssignedTreks(); // refresh to get latest server state
   } catch (err) {
     alertMessage.value = err.response?.data?.error || 'Failed to update slots.';
     alertType.value = 'danger';
   }
 };
 
+// change trek status (Open / Closed / Completed) — only assigned staff can do this
 const updateStatus = async (trek) => {
   try {
     await api.put(`/staff/treks/${trek.id}/status`, {

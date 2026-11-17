@@ -125,6 +125,7 @@ import { api } from '@/store/auth';
 
 const bookings = ref([]);
 const loading = ref(false);
+// filter state — all three filters apply together (AND logic)
 const search = ref('');
 const filterStatus = ref('all');
 const filterPayment = ref('all');
@@ -141,6 +142,7 @@ const fetchBookings = async () => {
   }
 };
 
+// client-side filtering so the table updates instantly without a new API call
 const filteredBookings = computed(() => {
   return bookings.value.filter((b) => {
     const s = search.value.toLowerCase();
@@ -155,6 +157,7 @@ const filteredBookings = computed(() => {
   });
 });
 
+// format booking timestamps for the table — short format is easier to scan in a dense table
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleString('en-IN', {
